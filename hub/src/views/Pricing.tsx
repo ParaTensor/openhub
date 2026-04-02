@@ -1,4 +1,5 @@
 import React from 'react';
+import {ChevronDown} from 'lucide-react';
 import {apiDelete, apiGet, apiPost, apiPut} from '../lib/api';
 
 type PricingRow = {
@@ -130,18 +131,21 @@ export default function PricingView() {
         </div>
         {scope === 'provider' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <select
-              value={providerAccountId}
-              onChange={(e) => setProviderAccountId(e.target.value)}
-              className="px-3 py-2 border rounded-lg"
-            >
-              <option value="">Select provider account</option>
-              {providers.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={providerAccountId}
+                onChange={(e) => setProviderAccountId(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-zinc-200 bg-white rounded-lg text-sm font-medium text-zinc-800 shadow-sm focus:outline-none focus:ring-4 focus:ring-black/5 focus:border-black transition-all"
+              >
+                <option value="">Select provider account</option>
+                {providers.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            </div>
             <p className="text-xs text-zinc-500 flex items-center">
               {providers.length > 0
                 ? 'This price will override global pricing for the selected provider.'
