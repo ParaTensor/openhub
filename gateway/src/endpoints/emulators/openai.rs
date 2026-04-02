@@ -1,27 +1,15 @@
 use axum::extract::State;
+use axum::response::IntoResponse;
 use axum::Json;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::endpoints::ProxyState;
+use crate::endpoints::{handle_chat_completions, handle_list_models};
 
-pub async fn chat(State(_state): State<ProxyState>, Json(payload): Json<Value>) -> Json<Value> {
-    Json(json!({
-        "id": "chatcmpl-openhub",
-        "object": "chat.completion",
-        "created": 1677652288,
-        "model": payload.get("model").cloned().unwrap_or(json!("gpt-3.5-turbo")),
-        "choices": [{
-            "index": 0,
-            "message": { "role": "assistant", "content": "Placeholder response." },
-            "finish_reason": "stop"
-        }],
-        "usage": { "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0 }
-    }))
+pub async fn chat(State(state): State<ProxyState>, Json(payload): Json<Value>) -> impl IntoResponse {
+    handle_chat_completions(State(state), Json(payload)).await
 }
 
-pub async fn models(State(_state): State<ProxyState>) -> Json<Value> {
-    Json(json!({
-        "object": "list",
-        "data": [{ "id": "gpt-3.5-turbo", "object": "model", "owned_by": "openhub" }]
-    }))
+pub async fn models(State(state): State<ProxyState>) -> impl IntoResponse {
+    handle_list_models(State(state)).await
 }

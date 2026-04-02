@@ -161,3 +161,91 @@ pub struct UpdateApiKey {
     pub concurrency_limit: Option<i32>,
     pub status: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ModelRecord {
+    pub id: String,
+    pub name: String,
+    pub provider: String,
+    pub description: Option<String>,
+    pub context: Option<String>,
+    pub pricing_prompt: Option<String>,
+    pub pricing_completion: Option<String>,
+    pub tags: String,
+    pub is_popular: i32,
+    pub latency: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewModelRecord {
+    pub id: String,
+    pub name: String,
+    pub provider: String,
+    pub description: String,
+    pub context: String,
+    pub pricing_prompt: String,
+    pub pricing_completion: String,
+    pub tags: Vec<String>,
+    pub is_popular: bool,
+    pub latency: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ProviderKeyRecord {
+    pub provider: String,
+    pub key: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct GatewayRecord {
+    pub instance_id: String,
+    pub status: String,
+    pub last_seen: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewActivityRecord {
+    pub model: String,
+    pub tokens: i32,
+    pub latency: i32,
+    pub status: i32,
+    pub user_id: String,
+    pub cost: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ActivityRecord {
+    pub id: i64,
+    pub timestamp: i64,
+    pub model: String,
+    pub tokens: i32,
+    pub latency: i32,
+    pub status: i32,
+    pub user_id: Option<String>,
+    pub cost: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct UserApiKeyRecord {
+    pub id: String,
+    pub name: String,
+    pub key: String,
+    pub uid: String,
+    pub created_at: i64,
+    pub last_used: Option<String>,
+    pub usage: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewUserApiKeyRecord {
+    pub id: String,
+    pub name: String,
+    pub key: String,
+    pub uid: String,
+    pub created_at: i64,
+    pub last_used: String,
+    pub usage: String,
+}

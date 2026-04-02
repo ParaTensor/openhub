@@ -43,6 +43,20 @@ fn normalize_sqlite_url(url: &str) -> String {
 async fn ensure_schema_postgres(pool: &sqlx::Pool<sqlx::Postgres>) -> Result<()> {
     sqlx::query(
         r#"
+        CREATE TABLE IF NOT EXISTS models (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            description TEXT,
+            context TEXT,
+            pricing_prompt TEXT,
+            pricing_completion TEXT,
+            tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+            is_popular BOOLEAN NOT NULL DEFAULT FALSE,
+            latency TEXT,
+            status TEXT NOT NULL DEFAULT 'online'
+        );
+
         CREATE TABLE IF NOT EXISTS provider_types (
             id TEXT PRIMARY KEY,
             label TEXT NOT NULL,
@@ -55,6 +69,40 @@ async fn ensure_schema_postgres(pool: &sqlx::Pool<sqlx::Postgres>) -> Result<()>
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+
+        CREATE TABLE IF NOT EXISTS provider_keys (
+            provider TEXT PRIMARY KEY,
+            key TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            updated_at BIGINT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS user_api_keys (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            key TEXT NOT NULL,
+            uid TEXT NOT NULL,
+            created_at BIGINT NOT NULL,
+            last_used TEXT,
+            usage TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS activity (
+            id BIGSERIAL PRIMARY KEY,
+            timestamp BIGINT NOT NULL,
+            model TEXT NOT NULL,
+            tokens INTEGER NOT NULL DEFAULT 0,
+            latency INTEGER NOT NULL DEFAULT 0,
+            status INTEGER NOT NULL DEFAULT 200,
+            user_id TEXT,
+            cost TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS gateways (
+            instance_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            last_seen BIGINT NOT NULL
+        );
         "#,
     )
     .execute(pool)
@@ -65,6 +113,20 @@ async fn ensure_schema_postgres(pool: &sqlx::Pool<sqlx::Postgres>) -> Result<()>
 async fn ensure_schema_sqlite(pool: &sqlx::Pool<sqlx::Sqlite>) -> Result<()> {
     sqlx::query(
         r#"
+        CREATE TABLE IF NOT EXISTS models (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            description TEXT,
+            context TEXT,
+            pricing_prompt TEXT,
+            pricing_completion TEXT,
+            tags TEXT NOT NULL DEFAULT '[]',
+            is_popular INTEGER NOT NULL DEFAULT 0,
+            latency TEXT,
+            status TEXT NOT NULL DEFAULT 'online'
+        );
+
         CREATE TABLE IF NOT EXISTS provider_types (
             id TEXT PRIMARY KEY,
             label TEXT NOT NULL,
@@ -76,6 +138,40 @@ async fn ensure_schema_sqlite(pool: &sqlx::Pool<sqlx::Sqlite>) -> Result<()> {
             docs_url TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS provider_keys (
+            provider TEXT PRIMARY KEY,
+            key TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS user_api_keys (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            key TEXT NOT NULL,
+            uid TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            last_used TEXT,
+            usage TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS activity (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER NOT NULL,
+            model TEXT NOT NULL,
+            tokens INTEGER NOT NULL DEFAULT 0,
+            latency INTEGER NOT NULL DEFAULT 0,
+            status INTEGER NOT NULL DEFAULT 200,
+            user_id TEXT,
+            cost TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS gateways (
+            instance_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            last_seen INTEGER NOT NULL
         );
         "#,
     )

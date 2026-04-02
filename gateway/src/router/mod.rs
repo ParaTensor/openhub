@@ -11,7 +11,10 @@ mod llm;
 use admin::admin_auth_middleware;
 use basic::build_basic_routes;
 use llm::build_llm_proxy_routes;
-use axum::{routing::{get, post}, middleware};
+use axum::{
+    middleware,
+    routing::{delete, get, post, put},
+};
 
 use crate::service::Service as LlmService;
 use crate::settings::Settings;
@@ -78,9 +81,34 @@ pub fn build_multi_mode_app(
         .route("/api-keys/:id", get(crate::endpoints::admin::get_api_key).put(crate::endpoints::admin::update_api_key).delete(crate::endpoints::admin::delete_api_key))
         .route("/api-keys/:id/rotate", post(crate::endpoints::admin::rotate_api_key))
         .layer(middleware::from_fn(admin_auth_middleware))
-        .with_state(state);
+        .with_state(state.clone());
+
+    let control_routes = Router::new()
+        .route("/api/health", get(crate::endpoints::control::api_health))
+        .route("/api/models", get(crate::endpoints::control::get_models))
+        .route("/api/models/sync", post(crate::endpoints::control::sync_models))
+        .route("/api/gateway/register", post(crate::endpoints::control::gateway_register))
+        .route("/api/gateway/list", get(crate::endpoints::control::gateway_list))
+        .route("/api/gateway/config", get(crate::endpoints::control::gateway_config))
+        .route("/api/provider-types", get(crate::endpoints::control::provider_types))
+        .route("/api/gateway/usage", post(crate::endpoints::control::gateway_usage))
+        .route("/api/activity", get(crate::endpoints::control::activity))
+        .route("/api/provider-keys", get(crate::endpoints::control::list_provider_keys))
+        .route(
+            "/api/provider-keys/:provider",
+            put(crate::endpoints::control::upsert_provider_key)
+                .delete(crate::endpoints::control::delete_provider_key),
+        )
+        .route("/api/user-api-keys", get(crate::endpoints::control::list_user_api_keys))
+        .route("/api/user-api-keys", post(crate::endpoints::control::create_user_api_key))
+        .route(
+            "/api/user-api-keys/:id",
+            delete(crate::endpoints::control::delete_user_api_key),
+        )
+        .with_state(state.clone());
 
     basic_routes
+        .merge(control_routes)
         .merge(llm_proxy_routes)
         .nest("/admin", admin_routes)
         .layer(build_cors_layer())

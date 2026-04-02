@@ -7,7 +7,7 @@ use opengateway::engine::instance::{get_instance_id, init_instance_id};
 use opengateway::pool::PoolManager;
 use opengateway::router::build_multi_mode_app;
 use opengateway::service::Service;
-use opengateway::settings::Settings;
+use opengateway::settings::{LlmBackendSettings, Settings};
 use opengateway::trace::TraceClient;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -102,7 +102,7 @@ async fn run_multi_mode(args: Args) -> Result<()> {
     }
     let _health_check = Arc::clone(&pool_manager).start_health_check();
 
-    let settings = Settings::default();
+    let settings = settings_from_env();
     let llm_service = Arc::new(tokio::sync::RwLock::new(Service::new(&settings.llm_backend)?));
     let runtime_settings = Arc::new(tokio::sync::RwLock::new(settings));
     let trace = TraceClient::from_env();
@@ -125,6 +125,57 @@ async fn run_multi_mode(args: Args) -> Result<()> {
 
     pool_manager.shutdown().await;
     Ok(())
+}
+
+fn settings_from_env() -> Settings {
+    let mut settings = Settings::default();
+    let default_backend = settings.llm_backend.clone();
+    let provider = std::env::var("OPENGATEWAY_PROVIDER")
+        .or_else(|_| std::env::var("LLM_PROVIDER"))
+        .unwrap_or_default()
+        .to_lowercase();
+    let model = std::env::var("OPENGATEWAY_MODEL")
+        .or_else(|_| std::env::var("LLM_MODEL"))
+        .ok();
+
+    let llm_api_key = std::env::var("OPENGATEWAY_LLM_API_KEY").ok();
+    let deepseek_api_key = std::env::var("DEEPSEEK_API_KEY").ok().or(llm_api_key.clone());
+    let openai_api_key = std::env::var("OPENAI_API_KEY").ok().or(llm_api_key.clone());
+    let anthropic_api_key = std::env::var("ANTHROPIC_API_KEY").ok().or(llm_api_key);
+
+    settings.llm_backend = match provider.as_str() {
+        "deepseek" if deepseek_api_key.is_some() => LlmBackendSettings::DeepSeek {
+            api_key: deepseek_api_key.unwrap_or_default(),
+            base_url: std::env::var("DEEPSEEK_BASE_URL").ok(),
+            region: std::env::var("DEEPSEEK_REGION").ok(),
+            model: model.unwrap_or_else(|| "deepseek-chat".to_string()),
+        },
+        "openai" if openai_api_key.is_some() => LlmBackendSettings::OpenAI {
+            api_key: openai_api_key.unwrap_or_default(),
+            base_url: std::env::var("OPENAI_BASE_URL").ok(),
+            region: std::env::var("OPENAI_REGION").ok(),
+            model: model.unwrap_or_else(|| "gpt-4o-mini".to_string()),
+        },
+        "anthropic" if anthropic_api_key.is_some() => LlmBackendSettings::Anthropic {
+            api_key: anthropic_api_key.unwrap_or_default(),
+            region: std::env::var("ANTHROPIC_REGION").ok(),
+            model: model.unwrap_or_else(|| "claude-3-5-sonnet-latest".to_string()),
+        },
+        "ollama" => LlmBackendSettings::Ollama {
+            base_url: std::env::var("OLLAMA_BASE_URL").ok(),
+            region: std::env::var("OLLAMA_REGION").ok(),
+            model: model.unwrap_or_else(|| "llama2".to_string()),
+        },
+        _ if deepseek_api_key.is_some() => LlmBackendSettings::DeepSeek {
+            api_key: deepseek_api_key.unwrap_or_default(),
+            base_url: std::env::var("DEEPSEEK_BASE_URL").ok(),
+            region: std::env::var("DEEPSEEK_REGION").ok(),
+            model: model.unwrap_or_else(|| "deepseek-chat".to_string()),
+        },
+        _ => default_backend,
+    };
+
+    settings
 }
 
 async fn shutdown_signal() {
