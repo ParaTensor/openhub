@@ -93,6 +93,24 @@ pub fn build_multi_mode_app(
         .route("/api/provider-types", get(crate::endpoints::control::provider_types))
         .route("/api/gateway/usage", post(crate::endpoints::control::gateway_usage))
         .route("/api/activity", get(crate::endpoints::control::activity))
+        .route("/api/pricing", get(crate::endpoints::control::get_pricing))
+        .route("/api/pricing/state", get(crate::endpoints::control::get_pricing_state))
+        .route(
+            "/api/pricing/draft",
+            get(crate::endpoints::control::get_pricing_draft)
+                .put(crate::endpoints::control::put_pricing_draft)
+                .delete(crate::endpoints::control::delete_pricing_draft),
+        )
+        .route("/api/pricing/preview", post(crate::endpoints::control::preview_pricing))
+        .route("/api/pricing/publish", post(crate::endpoints::control::publish_pricing))
+        .route(
+            "/api/pricing/rollback/:version",
+            post(crate::endpoints::control::rollback_pricing),
+        )
+        .route(
+            "/api/pricing/releases",
+            get(crate::endpoints::control::list_pricing_releases),
+        )
         .route("/api/provider-keys", get(crate::endpoints::control::list_provider_keys))
         .route(
             "/api/provider-keys/:provider",

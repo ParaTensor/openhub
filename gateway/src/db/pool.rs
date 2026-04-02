@@ -4,8 +4,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::db::models::{
     ActivityRecord, ApiKey, GatewayRecord, ModelRecord, NewActivityRecord, NewApiKey,
-    NewModelRecord, NewProvider, NewProviderType, NewUserApiKeyRecord, Provider, ProviderKeyRecord,
-    UpdateApiKey, UpdateProvider, UserApiKeyRecord,
+    NewModelRecord, NewPricingDraftRecord, NewProvider, NewProviderType, NewUserApiKeyRecord,
+    PricingDraftRecord, PricingPublishResult, PricingRecord, PricingReleaseRecord, PricingStateRecord,
+    Provider, ProviderKeyRecord, UpdateApiKey, UpdateProvider, UserApiKeyRecord,
 };
 
 #[derive(Clone)]
@@ -385,6 +386,250 @@ impl DatabasePool {
             }
         }
         Ok(())
+    }
+
+    pub async fn get_pricing_state(&self) -> Result<PricingStateRecord> {
+        match self {
+            Self::Postgres(pool) => Ok(sqlx::query_as::<_, PricingStateRecord>(
+                "SELECT current_version, config_version FROM pricing_state WHERE id = 1",
+            )
+            .fetch_one(pool)
+            .await?),
+        }
+    }
+
+    pub async fn list_pricing(&self) -> Result<Vec<PricingRecord>> {
+        let state = self.get_pricing_state().await?;
+        match self {
+            Self::Postgres(pool) => Ok(sqlx::query_as::<_, PricingRecord>(
+                "SELECT model, NULLIF(provider_account_id, '') AS provider_account_id, price_mode, input_price, output_price, markup_rate, currency, version, updated_at FROM model_pricings WHERE version = $1 ORDER BY model ASC, provider_account_id ASC",
+            )
+            .bind(state.current_version)
+            .fetch_all(pool)
+            .await?),
+        }
+    }
+
+    pub async fn list_pricing_by_version(&self, version: &str) -> Result<Vec<PricingRecord>> {
+        match self {
+            Self::Postgres(pool) => Ok(sqlx::query_as::<_, PricingRecord>(
+                "SELECT model, NULLIF(provider_account_id, '') AS provider_account_id, price_mode, input_price, output_price, markup_rate, currency, version, updated_at FROM model_pricings WHERE version = $1 ORDER BY model ASC, provider_account_id ASC",
+            )
+            .bind(version)
+            .fetch_all(pool)
+            .await?),
+        }
+    }
+
+    pub async fn list_pricing_draft(&self) -> Result<Vec<PricingDraftRecord>> {
+        match self {
+            Self::Postgres(pool) => Ok(sqlx::query_as::<_, PricingDraftRecord>(
+                "SELECT model, NULLIF(provider_account_id, '') AS provider_account_id, price_mode, input_price, output_price, markup_rate, currency, updated_at FROM model_pricings_draft ORDER BY model ASC, provider_account_id ASC",
+            )
+            .fetch_all(pool)
+            .await?),
+        }
+    }
+
+    pub async fn upsert_pricing_draft(&self, item: NewPricingDraftRecord) -> Result<()> {
+        let now = Self::now_millis();
+        let provider_account_id = item.provider_account_id.unwrap_or_default();
+        match self {
+            Self::Postgres(pool) => {
+                sqlx::query(
+                    r#"
+                    INSERT INTO model_pricings_draft (model, provider_account_id, price_mode, input_price, output_price, markup_rate, currency, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ON CONFLICT (model, provider_account_id)
+                    DO UPDATE SET
+                      price_mode = EXCLUDED.price_mode,
+                      input_price = EXCLUDED.input_price,
+                      output_price = EXCLUDED.output_price,
+                      markup_rate = EXCLUDED.markup_rate,
+                      currency = EXCLUDED.currency,
+                      updated_at = EXCLUDED.updated_at
+                    "#,
+                )
+                .bind(item.model)
+                .bind(provider_account_id)
+                .bind(item.price_mode)
+                .bind(item.input_price)
+                .bind(item.output_price)
+                .bind(item.markup_rate)
+                .bind(item.currency)
+                .bind(now)
+                .execute(pool)
+                .await?;
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn delete_pricing_draft(&self, model: &str, provider_account_id: Option<&str>) -> Result<()> {
+        let provider_account_id = provider_account_id.unwrap_or("");
+        match self {
+            Self::Postgres(pool) => {
+                sqlx::query(
+                    "DELETE FROM model_pricings_draft WHERE model = $1 AND provider_account_id = $2",
+                )
+                .bind(model)
+                .bind(provider_account_id)
+                .execute(pool)
+                .await?;
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn list_pricing_releases(&self, limit: i64) -> Result<Vec<PricingReleaseRecord>> {
+        let limit = limit.clamp(1, 100);
+        match self {
+            Self::Postgres(pool) => Ok(sqlx::query_as::<_, PricingReleaseRecord>(
+                "SELECT version, status, summary, operator, created_at, config_version FROM pricing_releases ORDER BY created_at DESC LIMIT $1",
+            )
+            .bind(limit)
+            .fetch_all(pool)
+            .await?),
+        }
+    }
+
+    pub async fn publish_pricing_draft(
+        &self,
+        operator: &str,
+        summary: serde_json::Value,
+    ) -> Result<PricingPublishResult> {
+        let now = Self::now_millis();
+        let version = format!("v{}", now);
+        match self {
+            Self::Postgres(pool) => {
+                let mut tx = pool.begin().await?;
+                let affected: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*)::BIGINT FROM model_pricings_draft",
+                )
+                .fetch_one(&mut *tx)
+                .await?;
+
+                sqlx::query("DELETE FROM model_pricings WHERE version = $1")
+                    .bind(&version)
+                    .execute(&mut *tx)
+                    .await?;
+
+                sqlx::query(
+                    r#"
+                    INSERT INTO model_pricings (model, provider_account_id, price_mode, input_price, output_price, markup_rate, currency, version, updated_at)
+                    SELECT model, provider_account_id, price_mode, input_price, output_price, markup_rate, currency, $1, updated_at
+                    FROM model_pricings_draft
+                    "#,
+                )
+                .bind(&version)
+                .execute(&mut *tx)
+                .await?;
+
+                let config_version: i64 = sqlx::query_scalar(
+                    "UPDATE pricing_state SET current_version = $1, config_version = config_version + 1, updated_at = $2 WHERE id = 1 RETURNING config_version",
+                )
+                .bind(&version)
+                .bind(now)
+                .fetch_one(&mut *tx)
+                .await?;
+
+                sqlx::query(
+                    "INSERT INTO pricing_releases (version, status, summary, operator, created_at, config_version) VALUES ($1, 'published', $2::jsonb, $3, $4, $5)",
+                )
+                .bind(&version)
+                .bind(summary)
+                .bind(operator)
+                .bind(now)
+                .bind(config_version)
+                .execute(&mut *tx)
+                .await?;
+
+                tx.commit().await?;
+                Ok(PricingPublishResult {
+                    version,
+                    config_version,
+                    affected_models: affected,
+                })
+            }
+        }
+    }
+
+    pub async fn rollback_pricing_version(
+        &self,
+        version: &str,
+        operator: &str,
+    ) -> Result<PricingPublishResult> {
+        let now = Self::now_millis();
+        match self {
+            Self::Postgres(pool) => {
+                let mut tx = pool.begin().await?;
+                let affected: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*)::BIGINT FROM model_pricings WHERE version = $1",
+                )
+                .bind(version)
+                .fetch_one(&mut *tx)
+                .await?;
+                if affected == 0 {
+                    anyhow::bail!("pricing version not found");
+                }
+                let config_version: i64 = sqlx::query_scalar(
+                    "UPDATE pricing_state SET current_version = $1, config_version = config_version + 1, updated_at = $2 WHERE id = 1 RETURNING config_version",
+                )
+                .bind(version)
+                .bind(now)
+                .fetch_one(&mut *tx)
+                .await?;
+                sqlx::query(
+                    "INSERT INTO pricing_releases (version, status, summary, operator, created_at, config_version) VALUES ($1, 'rolled_back', $2::jsonb, $3, $4, $5)",
+                )
+                .bind(version)
+                .bind(serde_json::json!({"action":"rollback"}))
+                .bind(operator)
+                .bind(now)
+                .bind(config_version)
+                .execute(&mut *tx)
+                .await?;
+                tx.commit().await?;
+                Ok(PricingPublishResult {
+                    version: version.to_string(),
+                    config_version,
+                    affected_models: affected,
+                })
+            }
+        }
+    }
+
+    pub async fn get_effective_pricing(
+        &self,
+        model: &str,
+        provider_account_id: Option<&str>,
+    ) -> Result<Option<PricingRecord>> {
+        let state = self.get_pricing_state().await?;
+        match self {
+            Self::Postgres(pool) => {
+                if let Some(provider_id) = provider_account_id {
+                    if let Some(record) = sqlx::query_as::<_, PricingRecord>(
+                        "SELECT model, NULLIF(provider_account_id, '') AS provider_account_id, price_mode, input_price, output_price, markup_rate, currency, version, updated_at FROM model_pricings WHERE model = $1 AND provider_account_id = $2 AND version = $3",
+                    )
+                    .bind(model)
+                    .bind(provider_id)
+                    .bind(&state.current_version)
+                    .fetch_optional(pool)
+                    .await?
+                    {
+                        return Ok(Some(record));
+                    }
+                }
+                let global = sqlx::query_as::<_, PricingRecord>(
+                    "SELECT model, NULLIF(provider_account_id, '') AS provider_account_id, price_mode, input_price, output_price, markup_rate, currency, version, updated_at FROM model_pricings WHERE model = $1 AND provider_account_id = '' AND version = $2",
+                )
+                .bind(model)
+                .bind(&state.current_version)
+                .fetch_optional(pool)
+                .await?;
+                Ok(global)
+            }
+        }
     }
 }
 

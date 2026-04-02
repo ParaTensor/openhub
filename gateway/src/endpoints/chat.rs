@@ -122,6 +122,33 @@ pub async fn handle_chat_completions(
     Json(payload): Json<Value>,
 ) -> Response {
     let model = payload.get("model").and_then(Value::as_str);
+    let provider_account_id = payload.get("provider").and_then(Value::as_str);
+    if let Some(model_name) = model {
+        match state
+            .db_pool
+            .get_effective_pricing(model_name, provider_account_id)
+            .await
+        {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                return error_response(
+                    StatusCode::BAD_REQUEST,
+                    format!("pricing_not_found for model {}", model_name),
+                    "pricing_not_found",
+                )
+                .into_response();
+            }
+            Err(err) => {
+                return error_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to load pricing: {}", err),
+                    "db_error",
+                )
+                .into_response();
+            }
+        }
+    }
+
     let messages = match parse_messages(payload.get("messages").and_then(Value::as_array)) {
         Ok(msgs) => msgs,
         Err(err) => {

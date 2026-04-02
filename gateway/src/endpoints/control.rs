@@ -9,7 +9,10 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::db::{ModelInfo, NewActivityRecord, NewModelRecord, NewProviderType, NewUserApiKeyRecord};
+use crate::db::{
+    ModelInfo, NewActivityRecord, NewModelRecord, NewPricingDraftRecord, NewProviderType,
+    NewUserApiKeyRecord,
+};
 use crate::endpoints::{error_response, ProxyState};
 
 #[derive(Debug, Deserialize)]
@@ -78,6 +81,38 @@ pub struct NewUserApiKeyRequest {
 pub struct ProviderKeyRequest {
     key: String,
     status: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PricingDraftUpsertRequest {
+    model: String,
+    provider_account_id: Option<String>,
+    price_mode: String,
+    input_price: Option<f64>,
+    output_price: Option<f64>,
+    markup_rate: Option<f64>,
+    currency: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PricingDraftDeleteRequest {
+    model: String,
+    provider_account_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PricingPublishRequest {
+    operator: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PricingPreviewRequest {
+    operator: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PricingReleasesQuery {
+    limit: Option<i64>,
 }
 
 fn now_millis() -> i64 {
@@ -542,6 +577,286 @@ pub async fn delete_user_api_key(
         Err(err) => error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Failed to delete user api key: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn get_pricing(State(state): State<ProxyState>) -> impl IntoResponse {
+    match state.db_pool.list_pricing().await {
+        Ok(rows) => Json(rows).into_response(),
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to list pricing: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn get_pricing_state(State(state): State<ProxyState>) -> impl IntoResponse {
+    match state.db_pool.get_pricing_state().await {
+        Ok(state_row) => Json(state_row).into_response(),
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to load pricing state: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn get_pricing_draft(State(state): State<ProxyState>) -> impl IntoResponse {
+    match state.db_pool.list_pricing_draft().await {
+        Ok(rows) => Json(rows).into_response(),
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to list pricing draft: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn put_pricing_draft(
+    State(state): State<ProxyState>,
+    Json(payload): Json<PricingDraftUpsertRequest>,
+) -> impl IntoResponse {
+    let mode = payload.price_mode.trim().to_lowercase();
+    if payload.model.trim().is_empty() {
+        return error_response(StatusCode::BAD_REQUEST, "model required", "invalid_request")
+            .into_response();
+    }
+    if mode != "fixed" && mode != "markup" {
+        return error_response(
+            StatusCode::BAD_REQUEST,
+            "price_mode must be fixed or markup",
+            "invalid_request",
+        )
+        .into_response();
+    }
+    if mode == "fixed" && (payload.input_price.is_none() || payload.output_price.is_none()) {
+        return error_response(
+            StatusCode::BAD_REQUEST,
+            "fixed mode requires input_price and output_price",
+            "invalid_request",
+        )
+        .into_response();
+    }
+    if mode == "markup" && payload.markup_rate.is_none() {
+        return error_response(
+            StatusCode::BAD_REQUEST,
+            "markup mode requires markup_rate",
+            "invalid_request",
+        )
+        .into_response();
+    }
+    let record = NewPricingDraftRecord {
+        model: payload.model.trim().to_string(),
+        provider_account_id: payload
+            .provider_account_id
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()),
+        price_mode: mode.clone(),
+        input_price: if mode == "fixed" {
+            payload.input_price
+        } else {
+            None
+        },
+        output_price: if mode == "fixed" {
+            payload.output_price
+        } else {
+            None
+        },
+        markup_rate: if mode == "markup" {
+            payload.markup_rate
+        } else {
+            None
+        },
+        currency: payload.currency.unwrap_or_else(|| "USD".to_string()),
+    };
+    match state.db_pool.upsert_pricing_draft(record).await {
+        Ok(_) => Json(json!({"status":"saved"})).into_response(),
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to save pricing draft: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn delete_pricing_draft(
+    State(state): State<ProxyState>,
+    Query(payload): Query<PricingDraftDeleteRequest>,
+) -> impl IntoResponse {
+    if payload.model.trim().is_empty() {
+        return error_response(StatusCode::BAD_REQUEST, "model required", "invalid_request")
+            .into_response();
+    }
+    match state
+        .db_pool
+        .delete_pricing_draft(payload.model.trim(), payload.provider_account_id.as_deref())
+        .await
+    {
+        Ok(_) => Json(json!({"status":"deleted"})).into_response(),
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to delete pricing draft: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn preview_pricing(
+    State(state): State<ProxyState>,
+    Json(payload): Json<PricingPreviewRequest>,
+) -> impl IntoResponse {
+    let _operator = payload.operator.unwrap_or_else(|| "system".to_string());
+    let draft = match state.db_pool.list_pricing_draft().await {
+        Ok(rows) => rows,
+        Err(err) => {
+            return error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to list pricing draft: {}", err),
+                "db_error",
+            )
+            .into_response();
+        }
+    };
+    let current = match state.db_pool.list_pricing().await {
+        Ok(rows) => rows,
+        Err(err) => {
+            return error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to list current pricing: {}", err),
+                "db_error",
+            )
+            .into_response();
+        }
+    };
+
+    let current_map: HashMap<String, crate::db::PricingRecord> = current
+        .into_iter()
+        .map(|r| {
+            (
+                format!("{}::{}", r.model, r.provider_account_id.clone().unwrap_or_default()),
+                r,
+            )
+        })
+        .collect();
+    let mut changes = Vec::new();
+    for item in &draft {
+        let key = format!(
+            "{}::{}",
+            item.model,
+            item.provider_account_id.clone().unwrap_or_default()
+        );
+        let before = current_map.get(&key);
+        changes.push(json!({
+            "model": item.model,
+            "provider_account_id": item.provider_account_id,
+            "before": before,
+            "after": item,
+        }));
+    }
+
+    let affected_models = draft
+        .iter()
+        .map(|r| r.model.clone())
+        .collect::<std::collections::HashSet<_>>()
+        .len() as i64;
+    Json(json!({
+        "affected_models": affected_models,
+        "changes_count": draft.len(),
+        "estimated_monthly_revenue": serde_json::Value::Null,
+        "estimated_profit_margin": serde_json::Value::Null,
+        "cost_basis_source": "provider_cost_markup",
+        "changes": changes
+    }))
+    .into_response()
+}
+
+pub async fn publish_pricing(
+    State(state): State<ProxyState>,
+    Json(payload): Json<PricingPublishRequest>,
+) -> impl IntoResponse {
+    let operator = payload.operator.unwrap_or_else(|| "system".to_string());
+    let summary = json!({"source":"pricing_center","operator":operator});
+    match state.db_pool.publish_pricing_draft(&operator, summary).await {
+        Ok(result) => {
+            tracing::info!(
+                metric = "pricing_publish",
+                version = %result.version,
+                affected = result.affected_models,
+                config_version = result.config_version,
+                operator = %operator
+            );
+            Json(json!({
+                "status":"published",
+                "version": result.version,
+                "config_version": result.config_version,
+                "affected_models": result.affected_models
+            }))
+            .into_response()
+        }
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to publish pricing: {}", err),
+            "db_error",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn rollback_pricing(
+    State(state): State<ProxyState>,
+    Path(version): Path<String>,
+    Json(payload): Json<PricingPublishRequest>,
+) -> impl IntoResponse {
+    let operator = payload.operator.unwrap_or_else(|| "system".to_string());
+    match state
+        .db_pool
+        .rollback_pricing_version(version.trim(), &operator)
+        .await
+    {
+        Ok(result) => {
+            tracing::info!(
+                metric = "pricing_rollback",
+                version = %result.version,
+                affected = result.affected_models,
+                config_version = result.config_version,
+                operator = %operator
+            );
+            Json(json!({
+                "status":"rolled_back",
+                "version": result.version,
+                "config_version": result.config_version,
+                "affected_models": result.affected_models
+            }))
+            .into_response()
+        }
+        Err(err) => error_response(
+            StatusCode::BAD_REQUEST,
+            format!("Failed to rollback pricing: {}", err),
+            "invalid_request",
+        )
+        .into_response(),
+    }
+}
+
+pub async fn list_pricing_releases(
+    State(state): State<ProxyState>,
+    Query(query): Query<PricingReleasesQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(20);
+    match state.db_pool.list_pricing_releases(limit).await {
+        Ok(rows) => Json(rows).into_response(),
+        Err(err) => error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to list pricing releases: {}", err),
             "db_error",
         )
         .into_response(),

@@ -8,6 +8,7 @@ import ChatView from './views/Chat';
 import DocsView from './views/Docs';
 import RankingsView from './views/Rankings';
 import HubConsoleView from './views/HubConsole';
+import PricingView from './views/Pricing';
 import {motion, AnimatePresence} from 'motion/react';
 
 export default function App() {
@@ -25,6 +26,8 @@ export default function App() {
         return <SettingsView />;
       case 'chat':
         return <ChatView />;
+      case 'pricing':
+        return <PricingView />;
       case 'docs':
         return <DocsView />;
       case 'rankings':

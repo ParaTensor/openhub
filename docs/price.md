@@ -10,6 +10,7 @@
 - 定价中心：唯一可写对客售价入口。
 - 结算优先级固定：`provider_account + model 覆写 > global model 价格 > reject`。
 - 禁止“固定价 + markup_rate”同时生效，防止重复加价。
+- 使用显式 `price_mode` 并配合数据库 `CHECK` 约束，避免“魔法值”导致误计费。
 
 ## 3. 交互分层（由浅入深）
 ### L1 快速定价（默认）
@@ -61,7 +62,16 @@ CREATE TABLE pricing_releases (
   status TEXT NOT NULL,                        -- published | rolled_back
   summary JSONB NOT NULL,
   operator TEXT NOT NULL,
-  created_at BIGINT NOT NULL
+  created_at BIGINT NOT NULL,
+  config_version BIGINT NOT NULL
+);
+
+-- 当前生效价格版本（单体热更新锚点）
+CREATE TABLE pricing_state (
+  id SMALLINT PRIMARY KEY DEFAULT 1,
+  current_version TEXT NOT NULL DEFAULT 'bootstrap',
+  config_version BIGINT NOT NULL DEFAULT 1,
+  updated_at BIGINT NOT NULL
 );
 ```
 
@@ -72,12 +82,14 @@ CREATE TABLE pricing_releases (
 - `POST /api/pricing/preview`：返回影响范围、变更摘要、预计毛利变化。
 - `POST /api/pricing/publish`：原子发布草稿到正式表，生成 `version`。
 - `POST /api/pricing/rollback/:version`：回滚到指定版本。
+- `GET /api/pricing/state`：读取当前 `version/config_version`。
 
 ## 6. 开发分期
 ### Phase A（先落地）
 - 数据表与后端 CRUD + preview/publish/rollback。
 - 定价中心 L1 页面（全局价编辑 + 发布）。
 - Gateway 读取正式价并按优先级结算。
+- 发布/回滚自动写入审计事件（含 version、affected、margin_delta）。
 
 ### Phase B
 - 批量规则引擎（前缀/Provider 条件）。
@@ -88,5 +100,5 @@ CREATE TABLE pricing_releases (
 
 ## 7. 验收标准
 - 任一模型可在 1 分钟内完成“改价->预览->发布”。
-- 价格缺失请求严格 reject，且错误信息可追踪。
+- 价格缺失请求严格 reject，返回标准错误：`pricing_not_found`。
 - 任一发布版本可一键回滚，回滚后新请求立即生效。
