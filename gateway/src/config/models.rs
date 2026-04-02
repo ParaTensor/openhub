@@ -12,7 +12,7 @@ impl Default for Config {
         Self {
             database: DatabaseConfig::default(),
             server: ServerConfig::default(),
-            llm_backend: "ollama".to_string(),
+            llm_backend: "openai_compatible".to_string(),
         }
     }
 }
@@ -31,7 +31,7 @@ pub struct DatabaseConfig {
 impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {
-            url: "sqlite://gateway.db".to_string(),
+            url: "postgresql://localhost:5432/openhub".to_string(),
         }
     }
 }
