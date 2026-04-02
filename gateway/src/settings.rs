@@ -35,9 +35,78 @@ impl Default for DatabaseSettings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct LlmBackendSettings {
-    pub r#type: String,
-    pub url: String,
-    pub api_key: Option<String>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum LlmBackendSettings {
+    OpenAI {
+        api_key: String,
+        base_url: Option<String>,
+        region: Option<String>,
+        model: String,
+    },
+    Anthropic {
+        api_key: String,
+        region: Option<String>,
+        model: String,
+    },
+    Ollama {
+        base_url: Option<String>,
+        region: Option<String>,
+        model: String,
+    },
+    Zhipu {
+        api_key: String,
+        base_url: Option<String>,
+        region: Option<String>,
+        model: String,
+    },
+    Aliyun {
+        api_key: String,
+        region: Option<String>,
+        model: String,
+    },
+    Volcengine {
+        api_key: String,
+        region: Option<String>,
+        model: String,
+    },
+    Tencent {
+        api_key: String,
+        model: String,
+        region: Option<String>,
+        secret_id: Option<String>,
+        secret_key: Option<String>,
+    },
+    Longcat {
+        api_key: String,
+        region: Option<String>,
+        model: String,
+    },
+    Moonshot {
+        api_key: String,
+        region: Option<String>,
+        model: String,
+    },
+    Minimax {
+        api_key: String,
+        base_url: Option<String>,
+        region: Option<String>,
+        model: String,
+    },
+    DeepSeek {
+        api_key: String,
+        base_url: Option<String>,
+        region: Option<String>,
+        model: String,
+    },
+}
+
+impl Default for LlmBackendSettings {
+    fn default() -> Self {
+        Self::Ollama {
+            base_url: Some("http://localhost:11434".to_string()),
+            region: None,
+            model: "llama2".to_string(),
+        }
+    }
 }

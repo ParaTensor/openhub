@@ -92,13 +92,19 @@ impl DatabasePool {
     pub async fn get_provider_type(&self, id: &str) -> Result<Option<crate::db::models::ProviderType>> {
         match self {
             Self::Postgres(pool) => {
-                sqlx::query_as!(crate::db::models::ProviderType, "SELECT * FROM provider_types WHERE id = $1", id)
+                sqlx::query_as::<_, crate::db::models::ProviderType>(
+                    "SELECT id, label, base_url, models, driver_type, enabled, sort_order, docs_url, created_at, updated_at FROM provider_types WHERE id = $1",
+                )
+                    .bind(id)
                     .fetch_optional(pool)
                     .await
                     .map_err(Into::into)
             }
             Self::Sqlite(pool) => {
-                sqlx::query_as!(crate::db::models::ProviderType, "SELECT * FROM provider_types WHERE id = ?", id)
+                sqlx::query_as::<_, crate::db::models::ProviderType>(
+                    "SELECT id, label, base_url, models, driver_type, enabled, sort_order, docs_url, created_at, updated_at FROM provider_types WHERE id = ?",
+                )
+                    .bind(id)
                     .fetch_optional(pool)
                     .await
                     .map_err(Into::into)
@@ -110,13 +116,33 @@ impl DatabasePool {
         let models_json = serde_json::to_string(&pt.models)?;
         match self {
             Self::Postgres(pool) => {
-                sqlx::query!("INSERT INTO provider_types (id, label, base_url, driver_type, models, enabled, sort_order, docs_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", pt.id, pt.label, pt.base_url, pt.driver_type, models_json, pt.enabled, pt.sort_order, pt.docs_url)
+                sqlx::query(
+                    "INSERT INTO provider_types (id, label, base_url, driver_type, models, enabled, sort_order, docs_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+                )
+                    .bind(pt.id)
+                    .bind(pt.label)
+                    .bind(pt.base_url)
+                    .bind(pt.driver_type)
+                    .bind(models_json)
+                    .bind(pt.enabled.unwrap_or(true))
+                    .bind(pt.sort_order.unwrap_or(0))
+                    .bind(pt.docs_url.unwrap_or_default())
                     .execute(pool)
                     .await?;
                 Ok(())
             }
             Self::Sqlite(pool) => {
-                sqlx::query!("INSERT INTO provider_types (id, label, base_url, driver_type, models, enabled, sort_order, docs_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", pt.id, pt.label, pt.base_url, pt.driver_type, models_json, pt.enabled, pt.sort_order, pt.docs_url)
+                sqlx::query(
+                    "INSERT INTO provider_types (id, label, base_url, driver_type, models, enabled, sort_order, docs_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                )
+                    .bind(pt.id)
+                    .bind(pt.label)
+                    .bind(pt.base_url)
+                    .bind(pt.driver_type)
+                    .bind(models_json)
+                    .bind(pt.enabled.unwrap_or(true))
+                    .bind(pt.sort_order.unwrap_or(0))
+                    .bind(pt.docs_url.unwrap_or_default())
                     .execute(pool)
                     .await?;
                 Ok(())

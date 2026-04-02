@@ -14,7 +14,7 @@ impl ModelSyncer {
         let count = providers_map.len();
         info!("Found {} providers in llm-providers registry", count);
 
-        for (id, provider) in providers_map.iter() {
+        for (id, provider) in providers_map.entries() {
             if let Err(e) = Self::sync_provider(db, id, provider).await {
                 warn!("Failed to sync provider {}: {}", id, e);
                 // Continue with other providers even if one fails

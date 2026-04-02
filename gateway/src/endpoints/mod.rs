@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod basic;
 pub mod chat;
+pub mod emulators;
 pub mod models;
 pub mod types;
 

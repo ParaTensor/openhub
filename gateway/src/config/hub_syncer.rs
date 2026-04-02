@@ -1,7 +1,7 @@
 use crate::db::{DatabasePool, NewProviderType};
 use crate::config::models::ConfigResponse;
 use anyhow::Result;
-use tracing::{info, warn};
+use tracing::info;
 
 pub struct HubSyncer;
 

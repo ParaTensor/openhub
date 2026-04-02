@@ -20,6 +20,7 @@ pub struct NewProviderType {
     pub id: String,
     pub label: String,
     pub base_url: String,
+    pub driver_type: String,
     pub models: Vec<ModelInfo>,
     pub enabled: Option<bool>,
     pub sort_order: Option<i32>,
@@ -105,4 +106,58 @@ pub struct RequestLog {
     pub is_fallback: i32,
     pub fallback_count: i64,
     pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewProvider {
+    pub name: String,
+    pub provider_type: String,
+    pub config: String,
+    pub enabled: bool,
+    pub priority: i32,
+    pub endpoint: Option<String>,
+    pub secret_id: Option<String>,
+    pub secret_key: Option<String>,
+    pub owner_id: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateProvider {
+    pub name: Option<String>,
+    pub provider_type: Option<String>,
+    pub config: Option<String>,
+    pub enabled: Option<bool>,
+    pub priority: Option<i32>,
+    pub endpoint: Option<String>,
+    pub secret_id: Option<String>,
+    pub secret_key: Option<String>,
+    pub expected_version: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewApiKey {
+    pub owner_id: Option<i64>,
+    pub project_id: Option<i64>,
+    pub key_hash: String,
+    pub name: String,
+    pub scope: String,
+    pub provider_ids: Option<String>,
+    pub protocol: String,
+    pub strategy: String,
+    pub fallback_chain: Option<String>,
+    pub qps_limit: f64,
+    pub concurrency_limit: i32,
+    pub expires_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateApiKey {
+    pub name: Option<String>,
+    pub provider_ids: Option<String>,
+    pub protocol: Option<String>,
+    pub strategy: Option<String>,
+    pub fallback_chain: Option<String>,
+    pub qps_limit: Option<f64>,
+    pub concurrency_limit: Option<i32>,
+    pub status: Option<String>,
 }

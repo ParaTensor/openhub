@@ -6,7 +6,7 @@ pub struct Args {
     #[command(subcommand)]
     pub command: Option<Commands>,
 
-    #[arg(short, long, env = "OPENGATEWAY_LOG_LEVEL")]
+    #[arg(short, long)]
     pub log_level: Option<String>,
 }
 
