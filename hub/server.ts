@@ -3,7 +3,7 @@ import {createServer as createViteServer} from 'vite';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {Pool} from 'pg';
-import {randomUUID} from 'crypto';
+import {randomBytes, randomInt, randomUUID, scryptSync, timingSafeEqual} from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -49,6 +49,100 @@ const providerBaseUrls: Record<string, string> = {
   meta: 'https://api.meta.ai/v1',
   deepseek: 'https://api.deepseek.com/v1',
 };
+
+type AuthUser = {
+  id: string;
+  username: string;
+  email: string;
+  display_name: string;
+  role: 'admin' | 'user';
+  status: string;
+};
+
+type AuthSessionResponse = {
+  token: string;
+  user: {
+    uid: string;
+    username: string;
+    email: string;
+    displayName: string;
+    role: 'admin' | 'user';
+  };
+};
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString('hex');
+  const derived = scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${derived}`;
+}
+
+function verifyPassword(password: string, storedHash: string) {
+  const parts = storedHash.split(':');
+  if (parts.length !== 2) return false;
+  const [salt, expected] = parts;
+  const derived = scryptSync(password, salt, 64).toString('hex');
+  const expectedBuffer = Buffer.from(expected, 'hex');
+  const actualBuffer = Buffer.from(derived, 'hex');
+  if (expectedBuffer.length !== actualBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, actualBuffer);
+}
+
+function normalizeEmail(email: string) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function normalizeUsername(username: string) {
+  return String(username || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '');
+}
+
+function generateVerificationCode() {
+  return String(randomInt(0, 1000000)).padStart(6, '0');
+}
+
+function toAuthSessionResponse(token: string, user: AuthUser): AuthSessionResponse {
+  return {
+    token,
+    user: {
+      uid: user.id,
+      username: user.username,
+      email: user.email,
+      displayName: user.display_name || user.username,
+      role: user.role,
+    },
+  };
+}
+
+async function sendRegisterVerificationEmail(email: string, code: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+  const from = process.env.RESEND_FROM_EMAIL || 'OpenHub <onboarding@resend.dev>';
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: 'OpenHub registration verification code',
+      html: `<p>Your OpenHub verification code is:</p><h2>${code}</h2><p>This code will expire in 10 minutes.</p>`,
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Resend request failed: ${response.status} ${detail}`);
+  }
+}
 
 function normalizeProviderId(provider: string) {
   return provider
@@ -134,6 +228,40 @@ async function initSchema() {
       created_at BIGINT NOT NULL,
       last_used TEXT,
       usage TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at BIGINT NOT NULL,
+      updated_at BIGINT NOT NULL,
+      last_login_at BIGINT
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at BIGINT NOT NULL,
+      expires_at BIGINT NOT NULL,
+      last_seen_at BIGINT,
+      revoked_at BIGINT
+    );
+
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      username TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      created_at BIGINT NOT NULL,
+      expires_at BIGINT NOT NULL,
+      used_at BIGINT
     );
 
     CREATE TABLE IF NOT EXISTS activity (
@@ -242,6 +370,21 @@ async function initSchema() {
      VALUES (1, 'bootstrap', 1, $1)
      ON CONFLICT (id) DO NOTHING`,
     [Date.now()],
+  );
+
+  await pool.query(
+    `INSERT INTO users (id, username, email, display_name, password_hash, role, status, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, 'admin', 'active', $6, $7)
+     ON CONFLICT (username) DO NOTHING`,
+    [
+      'local-admin',
+      'admin',
+      'admin@openhub.local',
+      'OpenHub Admin',
+      hashPassword('admin123'),
+      Date.now(),
+      Date.now(),
+    ],
   );
 
   await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS is_top_provider BOOLEAN NOT NULL DEFAULT false`);
@@ -396,6 +539,36 @@ async function startServer() {
   const app = express();
   app.use(express.json());
 
+  app.use('/api', async (req, res, next) => {
+    const publicPaths = new Set(['/health', '/auth/login', '/auth/register/request', '/auth/register/verify']);
+    if (publicPaths.has(req.path) || req.path === '/gateway/usage') {
+      return next();
+    }
+    const authorization = String(req.header('authorization') || '');
+    const match = authorization.match(/^Bearer\s+(.+)$/i);
+    const token = match?.[1]?.trim();
+    if (!token) {
+      return res.status(401).json({error: 'unauthorized'});
+    }
+    const now = Date.now();
+    const sessionResult = await pool.query(
+      `SELECT s.token, u.id, u.username, u.email, u.display_name, u.role, u.status
+       FROM auth_sessions s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.token = $1 AND s.revoked_at IS NULL AND s.expires_at > $2
+       LIMIT 1`,
+      [token, now],
+    );
+    const user = sessionResult.rows[0] as AuthUser | undefined;
+    if (!user || user.status !== 'active') {
+      return res.status(401).json({error: 'unauthorized'});
+    }
+    (req as any).authUser = user;
+    (req as any).authToken = token;
+    await pool.query('UPDATE auth_sessions SET last_seen_at = $2 WHERE token = $1', [token, now]);
+    next();
+  });
+
   app.get('/api/health', async (_req, res) => {
     try {
       await pool.query('SELECT 1');
@@ -403,6 +576,196 @@ async function startServer() {
     } catch {
       res.status(500).json({status: 'error', database: 'disconnected'});
     }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    const accountRaw = String(req.body?.account || '').trim();
+    const password = String(req.body?.password || '');
+    if (!accountRaw || !password) {
+      return res.status(400).json({error: 'account and password required'});
+    }
+    const account = accountRaw.toLowerCase();
+    const result = await pool.query(
+      `SELECT id, username, email, display_name, role, status, password_hash
+       FROM users
+       WHERE username = $1 OR email = $2
+       LIMIT 1`,
+      [normalizeUsername(account), normalizeEmail(account)],
+    );
+    const user = result.rows[0];
+    if (!user || user.status !== 'active' || !verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({error: 'invalid credentials'});
+    }
+    const token = randomBytes(24).toString('hex');
+    const now = Date.now();
+    await pool.query(
+      `INSERT INTO auth_sessions (token, user_id, created_at, expires_at, last_seen_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [token, user.id, now, now + 30 * 24 * 60 * 60 * 1000, now],
+    );
+    await pool.query('UPDATE users SET last_login_at = $2 WHERE id = $1', [user.id, now]);
+    res.json(
+      toAuthSessionResponse(token, {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        display_name: user.display_name,
+        role: user.role === 'admin' ? 'admin' : 'user',
+        status: user.status,
+      }),
+    );
+  });
+
+  app.post('/api/auth/register/request', async (req, res) => {
+    const username = normalizeUsername(req.body?.username || '');
+    const email = normalizeEmail(req.body?.email || '');
+    const password = String(req.body?.password || '');
+    const displayName = String(req.body?.display_name || username).trim() || username;
+    if (!username || !email || !password) {
+      return res.status(400).json({error: 'username, email and password required'});
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({error: 'invalid email'});
+    }
+    if (password.length < 8) {
+      return res.status(400).json({error: 'password must be at least 8 chars'});
+    }
+    const conflict = await pool.query(
+      'SELECT 1 FROM users WHERE username = $1 OR email = $2 LIMIT 1',
+      [username, email],
+    );
+    if (conflict.rowCount) {
+      return res.status(409).json({error: 'username or email already exists'});
+    }
+    const now = Date.now();
+    const code = generateVerificationCode();
+    await pool.query('DELETE FROM email_verifications WHERE email = $1 AND used_at IS NULL', [email]);
+    await pool.query(
+      `INSERT INTO email_verifications (id, email, username, display_name, password_hash, code_hash, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        randomUUID(),
+        email,
+        username,
+        displayName,
+        hashPassword(password),
+        hashPassword(code),
+        now,
+        now + 10 * 60 * 1000,
+      ],
+    );
+    try {
+      await sendRegisterVerificationEmail(email, code);
+      res.json({status: 'sent', email});
+    } catch (error: any) {
+      res.status(500).json({error: error?.message || 'failed to send verification email'});
+    }
+  });
+
+  app.post('/api/auth/register/verify', async (req, res) => {
+    const email = normalizeEmail(req.body?.email || '');
+    const code = String(req.body?.code || '').trim();
+    if (!email || !code) {
+      return res.status(400).json({error: 'email and code required'});
+    }
+    const now = Date.now();
+    const verificationResult = await pool.query(
+      `SELECT id, username, display_name, password_hash, code_hash, expires_at
+       FROM email_verifications
+       WHERE email = $1 AND used_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [email],
+    );
+    const verification = verificationResult.rows[0];
+    if (!verification) {
+      return res.status(400).json({error: 'verification not found'});
+    }
+    if (Number(verification.expires_at) < now) {
+      return res.status(400).json({error: 'verification expired'});
+    }
+    if (!verifyPassword(code, verification.code_hash)) {
+      return res.status(400).json({error: 'invalid code'});
+    }
+    const conflict = await pool.query(
+      'SELECT 1 FROM users WHERE username = $1 OR email = $2 LIMIT 1',
+      [verification.username, email],
+    );
+    if (conflict.rowCount) {
+      return res.status(409).json({error: 'username or email already exists'});
+    }
+    const userId = randomUUID();
+    await pool.query(
+      `INSERT INTO users (id, username, email, display_name, password_hash, role, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'user', 'active', $6, $7)`,
+      [userId, verification.username, email, verification.display_name, verification.password_hash, now, now],
+    );
+    await pool.query('UPDATE email_verifications SET used_at = $2 WHERE id = $1', [verification.id, now]);
+    const token = randomBytes(24).toString('hex');
+    await pool.query(
+      `INSERT INTO auth_sessions (token, user_id, created_at, expires_at, last_seen_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [token, userId, now, now + 30 * 24 * 60 * 60 * 1000, now],
+    );
+    res.json(
+      toAuthSessionResponse(token, {
+        id: userId,
+        username: verification.username,
+        email,
+        display_name: verification.display_name,
+        role: 'user',
+        status: 'active',
+      }),
+    );
+  });
+
+  app.post('/api/auth/logout', async (req, res) => {
+    const token = String((req as any).authToken || '');
+    if (!token) return res.status(401).json({error: 'unauthorized'});
+    await pool.query('UPDATE auth_sessions SET revoked_at = $2 WHERE token = $1', [token, Date.now()]);
+    res.json({status: 'logged_out'});
+  });
+
+  app.get('/api/auth/me', async (req, res) => {
+    const user = (req as any).authUser as AuthUser | undefined;
+    if (!user) return res.status(401).json({error: 'unauthorized'});
+    res.json({
+      uid: user.id,
+      username: user.username,
+      email: user.email,
+      displayName: user.display_name,
+      role: user.role,
+    });
+  });
+
+  app.post('/api/auth/change-password', async (req, res) => {
+    const user = (req as any).authUser as AuthUser | undefined;
+    const token = String((req as any).authToken || '');
+    if (!user || !token) return res.status(401).json({error: 'unauthorized'});
+    const currentPassword = String(req.body?.current_password || '');
+    const nextPassword = String(req.body?.new_password || '');
+    if (!currentPassword || !nextPassword) {
+      return res.status(400).json({error: 'current_password and new_password required'});
+    }
+    if (nextPassword.length < 8) {
+      return res.status(400).json({error: 'new password must be at least 8 chars'});
+    }
+    const result = await pool.query('SELECT password_hash FROM users WHERE id = $1 LIMIT 1', [user.id]);
+    const currentHash = result.rows[0]?.password_hash;
+    if (!currentHash || !verifyPassword(currentPassword, currentHash)) {
+      return res.status(400).json({error: 'current password invalid'});
+    }
+    await pool.query('UPDATE users SET password_hash = $2, updated_at = $3 WHERE id = $1', [
+      user.id,
+      hashPassword(nextPassword),
+      Date.now(),
+    ]);
+    await pool.query('UPDATE auth_sessions SET revoked_at = $2 WHERE user_id = $1 AND token <> $3 AND revoked_at IS NULL', [
+      user.id,
+      Date.now(),
+      token,
+    ]);
+    res.json({status: 'password_updated'});
   });
 
   app.get('/api/models', async (_req, res) => {

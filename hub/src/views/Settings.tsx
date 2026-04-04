@@ -2,9 +2,15 @@ import React from 'react';
 import {User, CreditCard, Shield, Sliders, Webhook, AlertTriangle, Save, TrendingUp} from 'lucide-react';
 import {cn} from '../lib/utils';
 import {localUser} from '../lib/session';
+import {ApiError, apiPost} from '../lib/api';
 
 export default function SettingsView() {
   const [activeTab, setActiveTab] = React.useState('profile');
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [savingPassword, setSavingPassword] = React.useState(false);
+  const [securityMessage, setSecurityMessage] = React.useState('');
+  const [securityError, setSecurityError] = React.useState('');
 
   const tabs = [
     {id: 'profile', label: 'Profile', icon: User},
@@ -13,6 +19,30 @@ export default function SettingsView() {
     {id: 'integrations', label: 'Integrations', icon: Webhook},
     {id: 'security', label: 'Security', icon: Shield},
   ];
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) return;
+    setSavingPassword(true);
+    setSecurityError('');
+    setSecurityMessage('');
+    try {
+      await apiPost('/api/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setSecurityMessage('Password updated successfully.');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSecurityError(err.body?.error || err.message);
+      } else {
+        setSecurityError(err instanceof Error ? err.message : 'Failed to change password');
+      }
+    } finally {
+      setSavingPassword(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -105,6 +135,34 @@ export default function SettingsView() {
 
           {activeTab === 'security' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+                <h3 className="font-bold text-sm uppercase tracking-widest text-zinc-400">Change Password</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Current password"
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl"
+                  />
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password (>= 8 chars)"
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl"
+                  />
+                </div>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={savingPassword || !currentPassword || newPassword.length < 8}
+                  className="px-4 py-2 rounded-lg bg-black text-white text-sm font-bold disabled:opacity-50"
+                >
+                  {savingPassword ? 'Updating...' : 'Update Password'}
+                </button>
+                {securityMessage && <p className="text-sm text-emerald-600">{securityMessage}</p>}
+                {securityError && <p className="text-sm text-red-600">{securityError}</p>}
+              </div>
               <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm p-6">
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex gap-3 text-red-800">
                   <AlertTriangle className="shrink-0" size={20} />

@@ -1,7 +1,8 @@
 import React from 'react';
 import {Menu, X, ChevronDown, Key, Settings, LogOut, Activity, LayoutGrid, BarChart3, MessageSquare, BookOpen, Server, BadgeDollarSign, PlugZap} from 'lucide-react';
 import {cn} from '../lib/utils';
-import {localUser} from '../lib/session';
+import {clearAuthSession, localUser} from '../lib/session';
+import {apiPost} from '../lib/api';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 
 export default function Navbar() {
@@ -9,8 +10,14 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    navigate('/models');
+  const handleLogout = async () => {
+    try {
+      await apiPost('/api/auth/logout', {});
+    } catch {
+      // keep local logout behavior even if request fails
+    }
+    clearAuthSession();
+    navigate('/login');
   };
 
   const navLinks = [
