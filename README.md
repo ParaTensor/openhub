@@ -35,3 +35,13 @@ Build and preview the frontend dashboard:
 npm run build
 npm run preview
 ```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`docs/tech-stack.md`](docs/tech-stack.md) | Full technology stack reference |
+| [`docs/skills.md`](docs/skills.md) | Skills guide & quickstart for building similar projects |
+| [`docs/hub-gateway-integration.md`](docs/hub-gateway-integration.md) | Hub ↔ Gateway integration design |
+| [`docs/billing.md`](docs/billing.md) | Billing and pricing model |
+| [`.github/copilot-instructions.md`](.github/copilot-instructions.md) | AI coding agent instructions |
