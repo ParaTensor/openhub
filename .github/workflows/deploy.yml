@@ -35,25 +35,31 @@ jobs:
           ZONE="us-central1-f"
           PROJECT="gen-lang-client-0208597279"
           DEST_DIR="/home/mac-m4/openhub"
+          TMP_DIR="~/openhub-tmp"
 
-          # 1. Prepare target directory and ensure correct ownership
-          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
-            sudo mkdir -p $DEST_DIR
-            sudo chown -R mac-m4:mac-m4 $DEST_DIR
-            rm -rf $DEST_DIR/gateway $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
+          echo "1. Preparing remote temporary directory..."
+          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+            rm -rf $TMP_DIR
+            mkdir -p $TMP_DIR
           "
 
-          # 2. Sync Configuration and Scripts
-          gcloud compute scp --recurse deploy mac-m4@$INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
-          gcloud compute scp package.json package-lock.json mac-m4@$INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
+          echo "2. Uploading files to temporary directory..."
+          gcloud compute scp --recurse deploy package.json package-lock.json gateway hub web packages $INSTANCE_NAME:$TMP_DIR/ --zone=$ZONE --project=$PROJECT --quiet
 
-          # 3. Sync Source Code
-          gcloud compute scp --recurse gateway hub web packages mac-m4@$INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
-
-          # 4. Trigger Remote Setup and Build
-          # We use sudo -E to preserve the env if needed, but script handles its own setup.
-          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+          echo "3. Moving files to final destination and building..."
+          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+            # Create target and wipe old app folders
+            sudo mkdir -p $DEST_DIR
+            sudo rm -rf $DEST_DIR/gateway $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
+            
+            # Copy new files from TMP_DIR
+            sudo cp -r $TMP_DIR/* $DEST_DIR/
+            
+            # Fix ownership for the systemd user
+            sudo chown -R mac-m4:mac-m4 $DEST_DIR
+            
+            # Execute setup script
             cd $DEST_DIR
-            chmod +x deploy/remote_setup_and_build.sh
-            bash deploy/remote_setup_and_build.sh
+            sudo chmod +x deploy/remote_setup_and_build.sh
+            sudo bash deploy/remote_setup_and_build.sh
           "
