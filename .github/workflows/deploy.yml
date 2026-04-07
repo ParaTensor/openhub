@@ -35,27 +35,34 @@ jobs:
           ZONE="us-central1-f"
           PROJECT="gen-lang-client-0208597279"
           DEST_DIR="/home/mac-m4/openhub"
-          TMP_DIR="~/openhub-tmp"
+          TMP_DIR="/home/mac-m4/openhub-tmp"
 
-          echo "1. Preparing remote temporary directory..."
-          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
-            rm -rf $TMP_DIR
-            mkdir -p $TMP_DIR
+          echo "1. Preparing remote temporary directory and freeing space..."
+          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+            sudo rm -rf $TMP_DIR
+            sudo mkdir -p $TMP_DIR
+            sudo chown -R mac-m4:mac-m4 $TMP_DIR
+            sudo apt-get clean
+            sudo journalctl --vacuum-time=1d || true
           "
 
           echo "2. Uploading files to temporary directory..."
-          gcloud compute scp --recurse deploy package.json package-lock.json gateway hub web packages $INSTANCE_NAME:$TMP_DIR/ --zone=$ZONE --project=$PROJECT --quiet
+          gcloud compute scp --recurse deploy package.json package-lock.json gateway hub web packages mac-m4@$INSTANCE_NAME:$TMP_DIR/ --zone=$ZONE --project=$PROJECT --quiet
 
           echo "3. Moving files to final destination and building..."
-          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
-            # Create target and wipe old app folders
+          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+            # Create target
             sudo mkdir -p $DEST_DIR
-            sudo rm -rf $DEST_DIR/gateway $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
             
-            # Copy new files from TMP_DIR
-            sudo cp -r $TMP_DIR/* $DEST_DIR/
+            # Wipe old app source folders but CAREFULLY PRESERVE gateway/target for Rust cache
+            sudo rm -rf $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
+            # For gateway, only remove src/ and migrations/ to preserve the target/ folder
+            sudo rm -rf $DEST_DIR/gateway/src $DEST_DIR/gateway/migrations || true
             
-            # Fix ownership for the systemd user
+            # Copy new files from TMP_DIR (automatically overwrites old files in gateway)
+            sudo cp -rn $TMP_DIR/* $DEST_DIR/ 2>/dev/null || sudo cp -r $TMP_DIR/* $DEST_DIR/
+            
+            # Fix ownership
             sudo chown -R mac-m4:mac-m4 $DEST_DIR
             
             # Execute setup script
