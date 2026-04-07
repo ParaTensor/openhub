@@ -37,22 +37,22 @@ jobs:
           DEST_DIR="/home/mac-m4/openhub"
 
           # 1. Prepare target directory and ensure correct ownership
-          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
             sudo mkdir -p $DEST_DIR
-            sudo chown -R \$(whoami):\$(whoami) $DEST_DIR
+            sudo chown -R mac-m4:mac-m4 $DEST_DIR
             rm -rf $DEST_DIR/gateway $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
           "
 
           # 2. Sync Configuration and Scripts
-          gcloud compute scp --recurse deploy $INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
-          gcloud compute scp package.json package-lock.json $INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
+          gcloud compute scp --recurse deploy mac-m4@$INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
+          gcloud compute scp package.json package-lock.json mac-m4@$INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
 
           # 3. Sync Source Code
-          gcloud compute scp --recurse gateway hub web packages $INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
+          gcloud compute scp --recurse gateway hub web packages mac-m4@$INSTANCE_NAME:$DEST_DIR --zone=$ZONE --project=$PROJECT --quiet
 
           # 4. Trigger Remote Setup and Build
           # We use sudo -E to preserve the env if needed, but script handles its own setup.
-          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
+          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
             cd $DEST_DIR
             chmod +x deploy/remote_setup_and_build.sh
             bash deploy/remote_setup_and_build.sh
