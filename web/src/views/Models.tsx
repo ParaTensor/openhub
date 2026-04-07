@@ -4,11 +4,8 @@ import {apiGet, apiPost} from '../lib/api';
 import {localUser} from '../lib/session';
 import { useTranslation } from "react-i18next";
 
-// No initialModels needed anymore, data comes from real pricing API.
-
-
 export default function ModelsView() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

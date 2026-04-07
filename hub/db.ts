@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { hashPassword } from './utils';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -11,190 +12,9 @@ const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@
 export const pool = new Pool({ connectionString: databaseUrl });
 
 export async function initSchema() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS models (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      description TEXT,
-      context TEXT,
-      pricing_prompt TEXT,
-      pricing_completion TEXT,
-      tags JSONB NOT NULL DEFAULT '[]'::jsonb,
-      is_popular BOOLEAN NOT NULL DEFAULT false,
-      latency TEXT,
-      status TEXT NOT NULL DEFAULT 'online'
-    );
-
-    CREATE TABLE IF NOT EXISTS provider_types (
-      id TEXT PRIMARY KEY,
-      label TEXT NOT NULL,
-      base_url TEXT NOT NULL,
-      driver_type TEXT NOT NULL DEFAULT 'openai_compatible',
-      models JSONB NOT NULL DEFAULT '[]'::jsonb,
-      enabled BOOLEAN NOT NULL DEFAULT true,
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      docs_url TEXT,
-      updated_at BIGINT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS provider_accounts (
-      id TEXT PRIMARY KEY,
-      provider_type TEXT NOT NULL,
-      label TEXT NOT NULL,
-      base_url TEXT NOT NULL,
-      docs_url TEXT,
-      status TEXT NOT NULL DEFAULT 'active',
-      updated_at BIGINT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS provider_api_keys (
-      id TEXT PRIMARY KEY,
-      provider_account_id TEXT NOT NULL REFERENCES provider_accounts(id) ON DELETE CASCADE,
-      label TEXT NOT NULL,
-      api_key TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'active',
-      updated_at BIGINT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS user_api_keys (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      key TEXT NOT NULL,
-      uid TEXT NOT NULL,
-      created_at BIGINT NOT NULL,
-      last_used TEXT,
-      usage TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE,
-      email TEXT NOT NULL UNIQUE,
-      display_name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
-      status TEXT NOT NULL DEFAULT 'active',
-      created_at BIGINT NOT NULL,
-      updated_at BIGINT NOT NULL,
-      last_login_at BIGINT
-    );
-
-    CREATE TABLE IF NOT EXISTS auth_sessions (
-      token TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      created_at BIGINT NOT NULL,
-      expires_at BIGINT NOT NULL,
-      last_seen_at BIGINT,
-      revoked_at BIGINT
-    );
-
-    CREATE TABLE IF NOT EXISTS email_verifications (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      username TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      code_hash TEXT NOT NULL,
-      created_at BIGINT NOT NULL,
-      expires_at BIGINT NOT NULL,
-      used_at BIGINT
-    );
-
-    CREATE TABLE IF NOT EXISTS activity (
-      id BIGSERIAL PRIMARY KEY,
-      timestamp BIGINT NOT NULL,
-      model TEXT NOT NULL,
-      tokens INTEGER NOT NULL DEFAULT 0,
-      latency INTEGER NOT NULL DEFAULT 0,
-      status INTEGER NOT NULL DEFAULT 200,
-      user_id TEXT,
-      cost TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS gateways (
-      instance_id TEXT PRIMARY KEY,
-      status TEXT NOT NULL,
-      last_seen BIGINT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS llm_models (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT,
-      context_length INTEGER,
-      global_pricing JSONB NOT NULL DEFAULT '{}'::jsonb,
-      updated_at BIGINT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS model_provider_pricings (
-      model_id TEXT NOT NULL,
-      provider_account_id TEXT NOT NULL,
-      price_mode TEXT NOT NULL CHECK (price_mode IN ('fixed', 'markup')),
-      input_cost DOUBLE PRECISION,
-      output_cost DOUBLE PRECISION,
-      input_price DOUBLE PRECISION,
-      output_price DOUBLE PRECISION,
-      cache_read_price DOUBLE PRECISION,
-      cache_write_price DOUBLE PRECISION,
-      reasoning_price DOUBLE PRECISION,
-      markup_rate DOUBLE PRECISION,
-      provider_key_id TEXT NOT NULL,
-      currency TEXT NOT NULL DEFAULT 'USD',
-      context_length INTEGER,
-      latency_ms INTEGER,
-      is_top_provider BOOLEAN NOT NULL DEFAULT false,
-      status TEXT NOT NULL DEFAULT 'online',
-      version TEXT NOT NULL,
-      updated_at BIGINT NOT NULL,
-      PRIMARY KEY (model_id, provider_account_id, provider_key_id, version),
-      CHECK (
-        (price_mode = 'fixed' AND input_price IS NOT NULL AND output_price IS NOT NULL AND markup_rate IS NULL) OR
-        (price_mode = 'markup' AND markup_rate IS NOT NULL)
-      )
-    );
-
-    CREATE TABLE IF NOT EXISTS model_provider_pricings_draft (
-      model_id TEXT NOT NULL,
-      provider_account_id TEXT NOT NULL,
-      price_mode TEXT NOT NULL CHECK (price_mode IN ('fixed', 'markup')),
-      input_cost DOUBLE PRECISION,
-      output_cost DOUBLE PRECISION,
-      input_price DOUBLE PRECISION,
-      output_price DOUBLE PRECISION,
-      cache_read_price DOUBLE PRECISION,
-      cache_write_price DOUBLE PRECISION,
-      reasoning_price DOUBLE PRECISION,
-      markup_rate DOUBLE PRECISION,
-      provider_key_id TEXT NOT NULL,
-      currency TEXT NOT NULL DEFAULT 'USD',
-      context_length INTEGER,
-      latency_ms INTEGER,
-      is_top_provider BOOLEAN NOT NULL DEFAULT false,
-      status TEXT NOT NULL DEFAULT 'online',
-      updated_at BIGINT NOT NULL,
-      PRIMARY KEY (model_id, provider_account_id, provider_key_id),
-      CHECK (
-        (price_mode = 'fixed' AND input_price IS NOT NULL AND output_price IS NOT NULL AND markup_rate IS NULL) OR
-        (price_mode = 'markup' AND markup_rate IS NOT NULL)
-      )
-    );
-
-    CREATE TABLE IF NOT EXISTS pricing_releases (
-      version TEXT PRIMARY KEY,
-      status TEXT NOT NULL,
-      summary JSONB NOT NULL,
-      operator TEXT NOT NULL,
-      created_at BIGINT NOT NULL,
-      config_version BIGINT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS pricing_state (
-      id SMALLINT PRIMARY KEY DEFAULT 1,
-      current_version TEXT NOT NULL DEFAULT 'bootstrap',
-      config_version BIGINT NOT NULL DEFAULT 1,
-      updated_at BIGINT NOT NULL
-    );
-  `);
+  const schemaPath = path.resolve(__dirname, '../packages/shared/schema.sql');
+  const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+  await pool.query(schemaSql);
 
   await pool.query(
     `INSERT INTO pricing_state (id, current_version, config_version, updated_at)
@@ -217,19 +37,6 @@ export async function initSchema() {
       Date.now(),
     ],
   );
-
-  await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS is_top_provider BOOLEAN NOT NULL DEFAULT false`);
-  await pool.query(`ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS is_top_provider BOOLEAN NOT NULL DEFAULT false`);
-  await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS input_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS output_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS input_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS output_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS cache_read_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS cache_write_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS reasoning_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS cache_read_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS cache_write_cost DOUBLE PRECISION`);
-  await pool.query(`ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS reasoning_cost DOUBLE PRECISION`);
   
   // Group Support Migrations
   // Since we are moving to Key-centric pricing, we will bypass the old price_group columns

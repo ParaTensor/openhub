@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Select } from '../../components/Select';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { apiPut } from '../../lib/api';
 import { useTranslation } from "react-i18next";
 
@@ -53,27 +54,20 @@ export default function ProviderAccountModal({ isOpen, onClose, onSuccess }: Pro
     }
   };
 
-  React.useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  // Using Headless UI Dialog for scroll lock management now
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div className="px-5 py-4 border-b flex items-center justify-between">
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <DialogPanel className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
           <div>
             <h3 className="font-bold text-lg">{t('provideraccountmodal.add_provider_account')}</h3>
             <p className="text-xs text-zinc-500 mt-0.5">{t('provideraccountmodal.register_a_new_upstream_provid')}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-md hover:bg-zinc-100"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
           <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
@@ -147,16 +141,20 @@ export default function ProviderAccountModal({ isOpen, onClose, onSuccess }: Pro
             <p className="text-xs text-zinc-400">{t('provideraccountmodal.stored_encrypted_used_by_the_g')}</p>
           </div>
         </div>
-        <div className="border-t px-5 py-4 bg-white">
+        <div className="border-t px-6 py-4 bg-zinc-50/80 flex flex-col sm:flex-row sm:items-center justify-end shrink-0 gap-3">
+          <button onClick={onClose} className="text-[13px] font-bold text-zinc-500 hover:text-zinc-900 px-3">
+            Cancel
+          </button>
           <button
             onClick={saveProvider}
             disabled={providerSaving || !newProvider.provider.trim() || !newProvider.key.trim()}
-            className="w-full bg-black text-white rounded-lg px-4 py-2 font-semibold disabled:opacity-50"
+            className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
           >
             {providerSaving ? 'Saving...' : 'Save Provider Account'}
           </button>
         </div>
+        </DialogPanel>
       </div>
-    </div>
+    </Dialog>
   );
 }

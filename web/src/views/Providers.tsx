@@ -252,18 +252,15 @@ export default function ProvidersView() {
         <DialogBackdrop className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm transition-opacity" />
         <div className="fixed inset-0 z-10 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <DialogPanel className="relative transform bg-white text-left shadow-xl transition-all sm:my-8 w-full max-w-lg rounded-3xl p-8 flex flex-col max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-2xl text-zinc-900">
-                {isEditing ? t('providers.edit_provider') : t('providers.add_provider_modal')}
-              </h3>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
-              >
-                <X size={24} className="text-zinc-400" />
-              </button>
-            </div>
+            <DialogPanel className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+                <div>
+                  <h3 className="font-bold text-lg">
+                    {isEditing ? t('providers.edit_provider') : t('providers.add_provider_modal')}
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">Manage upstream API provider</p>
+                </div>
+              </div>
 
             {error && (
               <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6 flex gap-3 text-red-600 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -275,7 +272,7 @@ export default function ProvidersView() {
               </div>
             )}
 
-            <div className="space-y-5 flex-1 overflow-y-auto p-1 -m-1">
+            <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
 
 
               {!isEditing ? null : (
@@ -398,18 +395,18 @@ export default function ProvidersView() {
                 </div>
               </div>
 </div>
-
-            <div className="flex gap-3 mt-10">
+            <div className="border-t px-6 py-4 bg-zinc-50/80 flex flex-col sm:flex-row sm:items-center justify-end shrink-0 gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 px-6 py-3 border border-zinc-200 rounded-xl font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
+                className="text-[13px] font-bold text-zinc-500 hover:text-zinc-900 px-3"
                 disabled={saving}
               >
-                {t('providers.cancel')}</button>
+                {t('providers.cancel')}
+              </button>
               <button
                 onClick={handleSaveProvider}
                 disabled={saving || !formData.provider.trim() || (!isEditing && formData.keys.every(k => !k.key.trim()))}
-                className="flex-[2] bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl px-6 py-3 font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {saving ? (
                   <>

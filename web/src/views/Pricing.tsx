@@ -7,7 +7,7 @@ import ProviderAccountModal from './pricing/ProviderAccountModal';
 import EditPriceModal from './pricing/EditPriceModal';
 import {
   PricingRow, PublishedPricingRow, ProviderKeyRow, PricingTableRow,
-  PricingPreview, SortKey, PriceRange, DrawerTab
+  PricingPreview, SortKey, PriceRange
 } from './pricing/types';
 import { useTranslation } from "react-i18next";
 
@@ -53,7 +53,6 @@ export default function PricingView() {
   const [currentPage, setCurrentPage] = React.useState(1);
 
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [drawerTab, setDrawerTab] = React.useState<DrawerTab>('quick');
 
   const [formPriceMode, setFormPriceMode] = React.useState<'fixed' | 'markup'>('fixed');
   const [model, setModel] = React.useState('');
@@ -79,6 +78,12 @@ export default function PricingView() {
   const [preview, setPreview] = React.useState<PricingPreview | null>(null);
   const [globalModels, setGlobalModels] = React.useState<any[]>([]);
   const [discountRate, setDiscountRate] = React.useState('1.0');
+  const [notification, setNotification] = React.useState<{message: string; type: 'success' | 'error'} | null>(null);
+
+  const showNotification = (msg: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message: msg, type });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   const loadAll = React.useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -121,12 +126,19 @@ export default function PricingView() {
     setCurrentPage(1);
   }, [search, providerFilter, statusFilter, priceRange]);
 
-  const openCreateDrawer = (tab: DrawerTab = 'quick') => {
-    setDrawerTab(tab);
+  const openCreateDrawer = () => {
     setFormPriceMode('fixed');
     setModel('');
     setModelQuery('');
-    setProviderAccountId(providers[0] || '');
+    const allKeys = providerKeyRows.flatMap(p => (p.keys || []).filter(k => !!k.id).map(k => ({ id: k.id, provider: p.provider })));
+    if (allKeys.length > 0) {
+      const randomKey = allKeys[Math.floor(Math.random() * allKeys.length)];
+      setProviderKeyId(randomKey.id as string);
+      setProviderAccountId(randomKey.provider);
+    } else {
+      setProviderKeyId('');
+      setProviderAccountId('');
+    }
     setInputCost('');
     setOutputCost('');
     setCacheReadCost('');
@@ -155,8 +167,7 @@ export default function PricingView() {
 
   const openEditDrawer = (row: PricingTableRow) => {
     const numberText = (value?: number | null) => (typeof value === 'number' ? String(value) : '');
-    setDrawerTab(row.price_mode === 'markup' ? 'advanced' : 'quick');
-    setFormPriceMode(row.price_mode);
+    setFormPriceMode('fixed');
     setModel(row.model);
     setModelQuery('');
     setProviderAccountId(row.provider_account_id || '');
@@ -178,7 +189,7 @@ export default function PricingView() {
   };
 
   const saveDraft = async (): Promise<boolean> => {
-    const mode = drawerTab === 'advanced' ? formPriceMode : 'fixed';
+    const mode = 'fixed';
     const payload: Record<string, unknown> = {
       model: model.trim(),
       provider_account_id: providerAccountId,
@@ -211,11 +222,6 @@ export default function PricingView() {
       payload.output_price = Number(outputPrice);
       payload.cache_read_price = cacheReadPrice ? Number(cacheReadPrice) : null;
       payload.cache_write_price = cacheWritePrice ? Number(cacheWritePrice) : null;
-    } else {
-      if (!markupRate) {
-        return false;
-      }
-      payload.markup_rate = Number(markupRate);
     }
 
     setBusy(true);
@@ -258,6 +264,11 @@ export default function PricingView() {
       await apiPost('/api/pricing/publish', {operator: 'admin@openhub.local'});
       await loadAll(false);
       await handlePreview();
+      showNotification(t('pricing.publish_success', '发布成功'));
+      return true;
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : String(err), 'error');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -326,6 +337,20 @@ export default function PricingView() {
 
   return (
     <div className="space-y-6 relative">
+      {notification && (
+        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-xl shadow-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ${
+          notification.type === 'success' 
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse`} />
+          <span className="text-sm font-bold">{notification.message}</span>
+          <button onClick={() => setNotification(null)} className="ml-2 p-1 hover:bg-black/5 rounded-md transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('pricing.pricing_center')}</h1>
@@ -344,12 +369,9 @@ export default function PricingView() {
         providers={providers}
         openProviderDrawer={openProviderDrawer}
         openCreateDrawer={openCreateDrawer}
-        draftOnly={statusFilter === 'draft'}
-        draftCount={draft.length}
         preview={preview}
         busy={busy}
         handlePreview={handlePreview}
-        handlePublish={handlePublish}
       />
 
       <PricingTable 
@@ -362,7 +384,6 @@ export default function PricingView() {
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
         openEditDrawer={openEditDrawer}
-        deleteDraft={deleteDraft}
       />
 
       <ProviderAccountModal 
@@ -374,8 +395,6 @@ export default function PricingView() {
       <EditPriceModal 
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        drawerTab={drawerTab}
-        setDrawerTab={setDrawerTab}
         model={model} setModel={setModel}
         modelQuery={modelQuery} setModelQuery={setModelQuery}
         providerAccountId={providerAccountId} setProviderAccountId={setProviderAccountId}
@@ -399,7 +418,6 @@ export default function PricingView() {
         discountRate={discountRate} setDiscountRate={setDiscountRate}
         providers={providers}
         busy={busy}
-        draftCount={draft.length}
         handlePreview={handlePreview}
         saveDraft={saveDraft}
         handlePublish={handlePublish}

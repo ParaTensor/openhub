@@ -14,7 +14,6 @@ interface PricingTableProps {
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
   openEditDrawer: (row: PricingTableRow) => void;
-  deleteDraft: (row: PricingTableRow) => void;
 }
 
 const rowKey = (row: {model: string; provider_account_id?: string | null; provider_key_id?: string}) => 
@@ -47,7 +46,7 @@ const getFinalPrice = (row: Pick<PricingTableRow, 'price_mode' | 'input_price' |
 export default function PricingTable({
   loading, pagedRows, tableRowsCount, hasProviders, onSort,
   currentPage, setCurrentPage, totalPages,
-  openEditDrawer, deleteDraft
+  openEditDrawer
 }: PricingTableProps) {
     const { t } = useTranslation();
   const navigate = useNavigate();
@@ -131,12 +130,6 @@ export default function PricingTable({
                   <td className="px-3 py-3 text-sm whitespace-nowrap">
                     {(() => {
                       const operationalStatus = (row.operational_status || '').toLowerCase();
-                      if (row.status === 'Draft') {
-                        return (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            {t('pricingtable.draft')}</span>
-                        );
-                      }
                       if (operationalStatus === 'offline' || operationalStatus === 'rate_limited') {
                         return (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200">
@@ -161,7 +154,6 @@ export default function PricingTable({
                   <td className="px-3 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
                       <button onClick={() => openEditDrawer(row)} className="px-2 py-1 text-xs font-semibold border rounded hover:bg-white">{t('pricingtable.edit')}</button>
-                      <button onClick={() => deleteDraft(row)} disabled={row.status !== 'Draft'} className="px-2 py-1 text-xs font-semibold text-red-600 border border-red-200 rounded hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed">{t('pricingtable.delete')}</button>
                     </div>
                   </td>
                 </tr>

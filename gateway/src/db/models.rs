@@ -163,40 +163,34 @@ pub struct UpdateApiKey {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct ModelRecord {
+pub struct LlmModelRecord {
     pub id: String,
     pub name: String,
-    pub provider: String,
     pub description: Option<String>,
-    pub context: Option<String>,
-    pub pricing_prompt: Option<String>,
-    pub pricing_completion: Option<String>,
-    pub tags: String,
-    pub is_popular: i32,
-    pub latency: Option<String>,
-    pub status: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewModelRecord {
-    pub id: String,
-    pub name: String,
-    pub provider: String,
-    pub description: String,
-    pub context: String,
-    pub pricing_prompt: String,
-    pub pricing_completion: String,
-    pub tags: Vec<String>,
-    pub is_popular: bool,
-    pub latency: String,
-    pub status: String,
+    pub context_length: Option<i32>,
+    pub global_pricing: serde_json::Value,
+    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct ProviderKeyRecord {
-    pub provider: String,
-    pub key: String,
+pub struct ProviderAccountRecord {
+    pub id: String,
+    pub provider_type: String,
+    pub label: String,
+    pub base_url: String,
+    pub docs_url: Option<String>,
     pub status: String,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ProviderApiKeyRecord {
+    pub id: String,
+    pub provider_account_id: String,
+    pub label: String,
+    pub api_key: String,
+    pub status: String,
+    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -251,62 +245,29 @@ pub struct NewUserApiKeyRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct PricingRecord {
-    pub model: String,
-    pub provider_account_id: Option<String>,
+pub struct ModelProviderPricingRecord {
+    pub model_id: String,
+    pub provider_account_id: String,
+    pub provider_key_id: String,
     pub price_mode: String,
+    pub input_cost: Option<f64>,
+    pub output_cost: Option<f64>,
+    pub cache_read_cost: Option<f64>,
+    pub cache_write_cost: Option<f64>,
+    pub reasoning_cost: Option<f64>,
     pub input_price: Option<f64>,
     pub output_price: Option<f64>,
     pub cache_read_price: Option<f64>,
     pub cache_write_price: Option<f64>,
+    pub reasoning_price: Option<f64>,
     pub markup_rate: Option<f64>,
     pub currency: String,
-    pub version: String,
-    pub updated_at: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct PricingDraftRecord {
-    pub model: String,
-    pub provider_account_id: Option<String>,
-    pub price_mode: String,
-    pub input_price: Option<f64>,
-    pub output_price: Option<f64>,
-    pub cache_read_price: Option<f64>,
-    pub cache_write_price: Option<f64>,
-    pub markup_rate: Option<f64>,
-    pub currency: String,
-    pub updated_at: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct PricingReleaseRecord {
-    pub version: String,
+    pub context_length: Option<i32>,
+    pub latency_ms: Option<i32>,
+    pub is_top_provider: bool,
     pub status: String,
-    pub summary: serde_json::Value,
-    pub operator: String,
-    pub created_at: i64,
-    pub config_version: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewPricingDraftRecord {
-    pub model: String,
-    pub provider_account_id: Option<String>,
-    pub price_mode: String,
-    pub input_price: Option<f64>,
-    pub output_price: Option<f64>,
-    pub cache_read_price: Option<f64>,
-    pub cache_write_price: Option<f64>,
-    pub markup_rate: Option<f64>,
-    pub currency: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PricingPublishResult {
     pub version: String,
-    pub config_version: i64,
-    pub affected_models: i64,
+    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]

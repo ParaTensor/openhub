@@ -197,7 +197,9 @@
   "pricing": {
     "pricing_center": "Pricing Center",
     "provider_bound_pricing_all_pri": "Provider-bound pricing • All prices are attached to a specific Provider Account.",
-    "0_00": "$0.00"
+    "0_00": "$0.00",
+    "publish_success": "Success: Pricing schemes have been synced to the gateway.",
+    "publish_failed": "Publish failed: "
   },
   "providers": {
     "provider_management_is_admin_o": "Provider management is admin-only.",
@@ -253,7 +255,7 @@
     "cost_1m": "Cost / 1M"
   },
   "editpricemodal": {
-    "provider_bound_draft_editor": "Provider-bound draft editor",
+    "provider_bound_draft_editor": "Provider-bound price editor",
     "quick_pricing": "Quick Pricing",
     "batch_rules": "Batch Rules",
     "advanced": "Advanced",

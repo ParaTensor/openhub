@@ -206,7 +206,9 @@
   "pricing": {
     "pricing_center": "方案与定价中心",
     "provider_bound_pricing_all_pri": "设置和服务提供商的价格，所有价格都和服务商的账号绑定",
-    "0_00": "$0.00"
+    "0_00": "$0.00",
+    "publish_success": "成功：价格方案已同步至网关并生效。",
+    "publish_failed": "发布失败："
   },
   "providers": {
     "provider_management_is_admin_o": "仅限管理员能够处理服务商事务。",
@@ -262,7 +264,7 @@
     "cost_1m": "百万单价"
   },
   "editpricemodal": {
-    "provider_bound_draft_editor": "服务商草稿编辑器",
+    "provider_bound_draft_editor": "服务商价格编辑器",
     "quick_pricing": "快速生成",
     "batch_rules": "批处理规则",
     "advanced": "高阶选项",

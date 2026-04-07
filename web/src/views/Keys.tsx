@@ -104,11 +104,11 @@ export default function KeysView() {
           {t('keys.your_api_keys_are_sensitive_in')}</p>
       </div>
 
-      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b">
+              <tr className="bg-gray-50/50 border-b border-gray-50">
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.name')}</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.key')}</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.usage')}</th>
@@ -116,7 +116,7 @@ export default function KeysView() {
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">{t('keys.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-50">
               {keys.map((key) => (
                 <tr key={key.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
@@ -173,15 +173,15 @@ export default function KeysView() {
               initial={{opacity: 0, scale: 0.95, y: 20}}
               animate={{opacity: 1, scale: 1, y: 0}}
               exit={{opacity: 0, scale: 0.95, y: 20}}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
             >
-              <div className="px-6 py-4 border-b flex items-center justify-between">
-                <h3 className="font-bold text-lg">{t('keys.create_api_key')}</h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                  <X size={20} className="text-gray-400" />
-                </button>
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+                <div>
+                  <h3 className="font-bold text-lg">{t('keys.create_api_key')}</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">Generate a new API key for access</p>
+                </div>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700 uppercase tracking-wider">{t('keys.key_name')}</label>
                   <input
@@ -197,15 +197,17 @@ export default function KeysView() {
                 <p className="text-xs text-gray-500 leading-relaxed">
                   {t('keys.give_your_key_a_descriptive_na')}</p>
               </div>
-              <div className="px-6 py-4 bg-gray-50 flex gap-3">
-                <button onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2.5 border rounded-xl font-bold text-sm hover:bg-white transition-all">
-                  {t('keys.cancel')}</button>
+              <div className="border-t px-6 py-4 bg-zinc-50/80 flex flex-col sm:flex-row sm:items-center justify-end shrink-0 gap-3">
+                <button onClick={() => setIsModalOpen(false)} className="text-[13px] font-bold text-zinc-500 hover:text-zinc-900 px-3">
+                  {t('keys.cancel')}
+                </button>
                 <button
                   onClick={handleCreateKey}
                   disabled={!newKeyName.trim()}
-                  className="flex-1 px-4 py-2.5 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {t('keys.create_key')}</button>
+                  {t('keys.create_key')}
+                </button>
               </div>
             </motion.div>
           </div>

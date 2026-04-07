@@ -16,18 +16,15 @@ interface PricingHeaderProps {
   providers: string[];
   openProviderDrawer: () => void;
   openCreateDrawer: (tab: 'quick' | 'batch') => void;
-  draftOnly: boolean;
-  draftCount: number;
   preview: PricingPreview | null;
   busy: boolean;
   handlePreview: () => Promise<void>;
-  handlePublish: () => Promise<void>;
 }
 
 export default function PricingHeader({
   search, setSearch, providerFilter, setProviderFilter, statusFilter, setStatusFilter,
   priceRange, setPriceRange, providers, openProviderDrawer, openCreateDrawer,
-  draftOnly, draftCount, preview, busy, handlePreview, handlePublish
+  preview, busy, handlePreview
 }: PricingHeaderProps) {
     const { t } = useTranslation();
   const hasProviders = providers.length > 0;
@@ -65,8 +62,7 @@ export default function PricingHeader({
             onChange={(val) => setStatusFilter(val as 'all' | 'published' | 'draft')}
             options={[
               { value: 'all', label: t('pricingheader.status_all') },
-              { value: 'published', label: t('pricingheader.status_published') },
-              { value: 'draft', label: t('pricingheader.status_draft') }
+              { value: 'published', label: t('pricingheader.status_published') }
             ]}
           />
 
@@ -115,17 +111,6 @@ export default function PricingHeader({
             <SlidersHorizontal size={14} /> {t('pricingheader.batch_rules')}</button>
         </div>
       </div>
-
-      {draftCount > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3">
-          <p className="text-sm font-medium text-amber-900">
-            {t('pricingheader.draft_items_pending_prefix', '还有 ')}{preview?.affected_models ?? draftCount} {t('pricingheader.draft_items_pending_suffix', ' 个模型操作还没发布')}
-          </p>
-          <div className="flex items-center gap-2">
-            <button onClick={handlePublish} className="px-3 py-1.5 rounded-lg bg-black text-white text-sm font-semibold hover:bg-zinc-800 disabled:opacity-50 shadow-sm transition-colors" disabled={busy || draftCount === 0}>{t('pricingheader.publish_all', '一键发布')}</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -100,22 +100,23 @@ export default function RankingsView() {
         </div>
       </div>
 
-      <div className="bg-white border border-zinc-100 rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-50 bg-zinc-50/50">
-              <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('rankings.rank')}</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('rankings.model')}</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('rankings.provider')}</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">{t('rankings.score')}</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">{t('rankings.latency')}</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">{t('rankings.cost_1m')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-50">
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('rankings.rank')}</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('rankings.model')}</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('rankings.provider')}</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">{t('rankings.score')}</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">{t('rankings.latency')}</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">{t('rankings.cost_1m')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
             {rankings.map((model, i) => (
-              <tr key={model.id} className="hover:bg-zinc-50/50 transition-colors group">
-                <td className="px-6 py-6">
+              <tr key={model.id} className="hover:bg-gray-50/50 transition-colors group">
+                <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
                       i === 0 ? 'bg-amber-100 text-amber-700' : 
@@ -128,27 +129,28 @@ export default function RankingsView() {
                     {i === 0 && <Award size={16} className="text-amber-500" />}
                   </div>
                 </td>
-                <td className="px-6 py-6">
+                <td className="px-6 py-4">
                   <span className="font-bold text-zinc-900 group-hover:text-black">{model.name}</span>
                 </td>
-                <td className="px-6 py-6">
+                <td className="px-6 py-4">
                   <span className="text-sm text-zinc-500">{model.provider}</span>
                 </td>
-                <td className="px-6 py-6 text-center">
+                <td className="px-6 py-4 text-center">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-bold">
                     {model.score}
                   </span>
                 </td>
-                <td className="px-6 py-6 text-center">
+                <td className="px-6 py-4 text-center">
                   <span className="text-sm font-medium text-zinc-600">{model.latency}</span>
                 </td>
-                <td className="px-6 py-6 text-right">
+                <td className="px-6 py-4 text-right">
                   <span className="text-sm font-bold text-zinc-900">{model.cost}</span>
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   );

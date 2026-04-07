@@ -82,33 +82,33 @@ export default function ModelProvidersView() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/70 border-b">
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.provider')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.input')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.output')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.reasoning')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.context')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.latency')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.mode')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.top')}</th>
-                <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.routing_status')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.provider')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.input')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.output')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.reasoning')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.context')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.latency')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.mode')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.top')}</th>
+                <th className="px-3 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('modelproviders.routing_status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {loading ? (
-                <tr><td colSpan={9} className="px-4 py-10 text-center text-zinc-500 text-sm">{t('modelproviders.loading')}</td></tr>
+                <tr><td colSpan={9} className="px-3 py-12 text-center text-zinc-500 text-sm">{t('modelproviders.loading')}</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-10 text-center text-zinc-500 text-sm">{t('modelproviders.no_provider_pricing_found_for_')}</td></tr>
+                <tr><td colSpan={9} className="px-3 py-12 text-center text-zinc-500 text-sm">{t('modelproviders.no_provider_pricing_found_for_')}</td></tr>
               ) : (
                 rows.map((row, idx) => (
-                  <tr key={`${row.provider_account_id || 'na'}-${idx}`} className="hover:bg-gray-50/50">
-                    <td className="px-4 py-3 text-sm font-semibold">{row.provider_account_id || '-'}</td>
-                    <td className="px-4 py-3 text-sm font-mono">{fmtPrice(row.input_price)}</td>
-                    <td className="px-4 py-3 text-sm font-mono">{fmtPrice(row.output_price)}</td>
-                    <td className="px-4 py-3 text-sm font-mono">{fmtPrice(row.reasoning_price)}</td>
-                    <td className="px-4 py-3 text-sm">{row.context_length ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm">{row.latency_ms != null ? `${row.latency_ms}ms` : '-'}</td>
-                    <td className="px-4 py-3 text-sm">{row.price_mode}</td>
-                    <td className="px-4 py-3 text-sm">
+                  <tr key={`${row.provider_account_id || 'na'}-${idx}`} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-3 py-3 text-sm font-semibold">{row.provider_account_id || '-'}</td>
+                    <td className="px-3 py-3 text-sm font-mono">{fmtPrice(row.input_price)}</td>
+                    <td className="px-3 py-3 text-sm font-mono">{fmtPrice(row.output_price)}</td>
+                    <td className="px-3 py-3 text-sm font-mono">{fmtPrice(row.reasoning_price)}</td>
+                    <td className="px-3 py-3 text-sm">{row.context_length ?? '-'}</td>
+                    <td className="px-3 py-3 text-sm">{row.latency_ms != null ? `${row.latency_ms}ms` : '-'}</td>
+                    <td className="px-3 py-3 text-sm">{row.price_mode}</td>
+                    <td className="px-3 py-3 text-sm">
                       <input
                         type="checkbox"
                         checked={Boolean(row.is_top_provider)}
@@ -116,7 +116,7 @@ export default function ModelProvidersView() {
                         onChange={(e) => row.provider_account_id && updateRouting(row.provider_account_id, {is_top_provider: e.target.checked})}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-3 py-3 text-sm">
                       <select
                         value={row.status || 'online'}
                         disabled={!row.provider_account_id || savingProvider === row.provider_account_id}
