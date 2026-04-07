@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use axum::{
-    extract::{FromRequestParts, State},
+    extract::FromRequestParts,
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
     Json,

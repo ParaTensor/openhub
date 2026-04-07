@@ -1,10 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use sqlx::{Pool, Postgres};
-use std::collections::HashMap;
 
 use unigateway_core::{
-    Endpoint, LoadBalancingStrategy, ModelPolicy, ProviderKind, ProviderPool, RetryPolicy,
-    SecretString, UniGatewayEngine,
+    ProviderPool, UniGatewayEngine,
 };
 use unigateway_runtime::host::{
     ResolvedProvider, RuntimeConfig, RuntimeConfigHost, RuntimeEngineHost, RuntimeFuture,
@@ -60,7 +58,7 @@ impl RuntimeRoutingHost for OpenHubRuntime {
     fn resolve_providers<'a>(
         &'a self,
         _service_id: &'a str,
-        protocol: &'a str,
+        _protocol: &'a str,
         _hint: Option<&'a str>,
     ) -> RuntimeFuture<'a, Result<Vec<ResolvedProvider>>> {
         Box::pin(async move {

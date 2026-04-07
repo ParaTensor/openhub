@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use std::sync::Arc;
 
 use crate::runtime::OpenHubRuntime;
-use unigateway_core::{ExecutionTarget, PoolId};
+use unigateway_core::ExecutionTarget;
 
 /// Resolves a requested model name to one or more `provider_account_id`s,
 /// picking the best active upstream based on `model_provider_pricings`.
@@ -15,7 +15,7 @@ pub async fn resolve_model_target(
     #[derive(sqlx::FromRow)]
     struct PricingRow {
         provider_account_id: String,
-        is_top_provider: bool,
+        _is_top_provider: bool,
     }
 
     // Lookup active pricings for this model to find a target provider account

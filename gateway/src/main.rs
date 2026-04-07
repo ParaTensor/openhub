@@ -24,7 +24,6 @@ async fn main() -> Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db_pool = match try_database_with_url(Some(&database_url)).await {
         Ok(opengateway::db::DatabasePool::Postgres(pool)) => pool,
-        Ok(_) => panic!("Expected PostgreSQL database pool"),
         Err(e) => {
             error!("Database initialization failed: {}", e);
             std::process::exit(1);
