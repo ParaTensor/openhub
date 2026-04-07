@@ -256,3 +256,14 @@ ALTER TABLE model_pricings ADD COLUMN IF NOT EXISTS cache_read_price DOUBLE PREC
 ALTER TABLE model_pricings ADD COLUMN IF NOT EXISTS cache_write_price DOUBLE PRECISION;
 ALTER TABLE model_pricings_draft ADD COLUMN IF NOT EXISTS cache_read_price DOUBLE PRECISION;
 ALTER TABLE model_pricings_draft ADD COLUMN IF NOT EXISTS cache_write_price DOUBLE PRECISION;
+
+-- Provider types and accounts migrations
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS docs_url TEXT;
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS driver_type TEXT NOT NULL DEFAULT 'openai_compatible';
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE provider_types ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT true;
+
+ALTER TABLE provider_accounts ADD COLUMN IF NOT EXISTS docs_url TEXT;

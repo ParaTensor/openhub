@@ -63,13 +63,13 @@ export default function ProviderAccountModal({ isOpen, onClose, onSuccess }: Pro
       <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
         <DialogPanel className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white text-left">
           <div>
             <h3 className="font-bold text-lg">{t('provideraccountmodal.add_provider_account')}</h3>
             <p className="text-xs text-zinc-500 mt-0.5">{t('provideraccountmodal.register_a_new_upstream_provid')}</p>
           </div>
         </div>
-        <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
+        <div className="flex-1 overflow-auto px-5 py-5 space-y-4 text-left">
           <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
             A <strong>{t('provideraccountmodal.provider_account')}</strong> {t('provideraccountmodal.represents_a_single_upstream_a')}</div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import {ExternalLink, ShieldAlert, Plus, Trash2, Edit2, Globe, FileText, X, Cpu} from 'lucide-react';
+import {ExternalLink, ShieldAlert, Plus, Trash2, Edit2, Globe, FileText, X, Cpu, Key} from 'lucide-react';
 import {apiDelete, apiGet, apiPut} from '../lib/api';
 import {localUser} from '../lib/session';
 import {clsx} from 'clsx';
@@ -223,21 +223,25 @@ export default function ProvidersView() {
                     <span className="text-[13px] font-medium truncate tracking-tight">{p.base_url}</span>
                   </div>
                 )}
-                {p.docs_url && (
-                  <a 
-                    href={p.docs_url} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="flex items-center gap-3 text-zinc-500 hover:text-zinc-900 transition-all group/link"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100/50 flex items-center justify-center shrink-0 group-hover/link:bg-zinc-900 group-hover/link:text-white transition-all duration-300">
-                      <FileText size={15} />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[13px] font-semibold tracking-tight underline underline-offset-4 decoration-zinc-200 group-hover/link:decoration-zinc-900 transition-all">{t('providers.documentation')}</span>
-                      <ExternalLink size={12} className="text-zinc-300 group-hover/link:text-zinc-400 transition-colors" />
-                    </div>
-                  </a>
+                {p.keys && p.keys.length > 0 && (
+                  <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto pr-1 [scrollbar-width:thin] hover:[scrollbar-color:theme(colors.zinc.300)_transparent] [scrollbar-color:transparent_transparent] transition-all">
+                    {p.keys.map((k, i) => {
+                      const maskedKey = k.key && k.key.length > 8 
+                        ? `${k.key.substring(0, 4)}...${k.key.substring(k.key.length - 4)}` 
+                        : (k.key ? '***' : '');
+                      
+                      if (!maskedKey) return null;
+
+                      return (
+                        <div key={i} className="flex items-center gap-3 text-zinc-500 group-hover:text-zinc-600 transition-colors">
+                          <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100/50 flex items-center justify-center shrink-0">
+                            <Key size={15} />
+                          </div>
+                          <span className="text-[13px] font-medium font-mono truncate tracking-tight">{maskedKey}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
@@ -247,23 +251,21 @@ export default function ProvidersView() {
 
 
 
-      {/* Headless UI Modal */}
       <Dialog open={showModal} onClose={() => setShowModal(false)} className="relative z-50">
-        <DialogBackdrop className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm transition-opacity" />
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <DialogPanel className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <DialogPanel className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-left">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
                 <div>
                   <h3 className="font-bold text-lg">
                     {isEditing ? t('providers.edit_provider') : t('providers.add_provider_modal')}
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-0.5">Manage upstream API provider</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{t('providers.manage_provider_account_metada')}</p>
                 </div>
               </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6 flex gap-3 text-red-600 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 m-5 mb-1 flex gap-3 text-red-600 animate-in fade-in slide-in-from-top-2 duration-300">
                 <ShieldAlert className="shrink-0 mt-0.5" size={18} />
                 <div className="flex-1">
                   <p className="text-sm font-bold uppercase tracking-tight mb-0.5">{t('providers.error')}</p>
@@ -276,20 +278,20 @@ export default function ProvidersView() {
 
 
               {!isEditing ? null : (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('providers.provider_id')}</label>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.provider_id')}</label>
                   <input
                     value={formData.provider}
                     onChange={(e) => setFormData({...formData, provider: e.target.value})}
                     placeholder={t('providers.placeholder_id')}
                     disabled={isEditing}
-                    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all disabled:opacity-50 disabled:bg-zinc-100"
+                    className="w-full px-3 py-2 border rounded-lg text-sm bg-zinc-50 focus:outline-none disabled:opacity-50"
                   />
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('providers.display_name')}</label>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.display_name')}</label>
                 <input
                   value={formData.label}
                   onChange={(e) => {
@@ -308,17 +310,17 @@ export default function ProvidersView() {
                     }
                   }}
                   placeholder={t('providers.placeholder_display_name')}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('providers.base_url')}</label>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.base_url')}</label>
                 <input
                   value={formData.base_url}
                   onChange={(e) => setFormData({...formData, base_url: e.target.value})}
                   placeholder={t('providers.placeholder_base_url')}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all font-mono text-sm"
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
                 />
               </div>
 
@@ -327,7 +329,7 @@ export default function ProvidersView() {
               
               <div className="space-y-3 pt-4 border-t border-zinc-100">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                  <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
                     {t('providers.api_keys_cost_channels')}</label>
                   <button
                     type="button"
@@ -350,7 +352,7 @@ export default function ProvidersView() {
                               setFormData({...formData, keys: newKeys});
                             }}
                             placeholder={t('providers.placeholder_channel_name')}
-                            className="flex-1 px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                            className="flex-1 px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           />
                           <select
                             value={k.status}
@@ -359,7 +361,7 @@ export default function ProvidersView() {
                               newKeys[index].status = e.target.value;
                               setFormData({...formData, keys: newKeys});
                             }}
-                            className="bg-white border border-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                            className="bg-white border border-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="active">{t('providers.active')}</option>
                             <option value="inactive">{t('providers.inactive')}</option>
@@ -374,7 +376,7 @@ export default function ProvidersView() {
                             setFormData({...formData, keys: newKeys});
                           }}
                           placeholder={isEditing && k.id ? t('providers.placeholder_key_editing') : t('providers.placeholder_key_new')}
-                          className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all font-mono"
+                          className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
                         />
                       </div>
                       {formData.keys.length > 1 && (
@@ -422,7 +424,6 @@ export default function ProvidersView() {
               </button>
             </div>
             </DialogPanel>
-          </div>
         </div>
       </Dialog>
     </div>
