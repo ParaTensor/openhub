@@ -734,6 +734,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "gateway"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "axum",
+ "bcrypt",
+ "chrono",
+ "clap",
+ "dotenvy",
+ "futures",
+ "futures-util",
+ "once_cell",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.12.28",
+ "resend-rs",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "sqlx",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "unigateway-core",
+ "unigateway-runtime",
+ "url",
+ "uuid",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1469,43 +1506,6 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
-
-[[package]]
-name = "opengateway"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "async-stream",
- "axum",
- "bcrypt",
- "chrono",
- "clap",
- "dotenvy",
- "futures",
- "futures-util",
- "once_cell",
- "rand 0.8.5",
- "regex",
- "reqwest 0.12.28",
- "resend-rs",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "sqlx",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
- "unigateway-core",
- "unigateway-runtime",
- "url",
- "uuid",
-]
 
 [[package]]
 name = "openssl"

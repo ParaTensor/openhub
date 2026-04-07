@@ -74,6 +74,9 @@ sudo cp $PROJECT_DIR/deploy/openhub-hub.service /etc/systemd/system/openhub-hub.
 sudo cp $PROJECT_DIR/deploy/openhub-gateway.service /etc/systemd/system/openhub-gateway.service
 sudo systemctl daemon-reload
 
+# Fix ownership back to the execution user since 'sudo bash' created node_modules and target as root!
+sudo chown -R mac-m4:mac-m4 $PROJECT_DIR
+
 sudo systemctl enable $HUB_SERVICE
 sudo systemctl enable $GATEWAY_SERVICE
 

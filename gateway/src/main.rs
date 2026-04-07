@@ -1,7 +1,7 @@
 use anyhow::Result;
-use opengateway::api::api_router;
-use opengateway::db::try_database_with_url;
-use opengateway::runtime::OpenHubRuntime;
+use gateway::api::api_router;
+use gateway::db::try_database_with_url;
+use gateway::runtime::OpenHubRuntime;
 use std::sync::Arc;
 use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db_pool = match try_database_with_url(Some(&database_url)).await {
-        Ok(opengateway::db::DatabasePool::Postgres(pool)) => pool,
+        Ok(gateway::db::DatabasePool::Postgres(pool)) => pool,
         Err(e) => {
             error!("Database initialization failed: {}", e);
             std::process::exit(1);
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
         registry.register(driver);
     }
 
-    let hooks = Arc::new(opengateway::usage::hooks::OpenHubHooks {
+    let hooks = Arc::new(gateway::usage::hooks::OpenHubHooks {
         db: db_pool.clone(),
     });
 
@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
     });
 
     // Start Phase 2: Active Synchronization
-    opengateway::sync::bootstrap::start_background_syncer(runtime.clone()).await;
+    gateway::sync::bootstrap::start_background_syncer(runtime.clone()).await;
 
     let app = api_router().with_state(runtime);
 

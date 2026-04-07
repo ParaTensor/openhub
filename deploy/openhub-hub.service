@@ -11,6 +11,7 @@ Restart=always
 RestartSec=3
 Environment=NODE_ENV=production
 Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/openhub
+Environment=PORT=3000
 
 [Install]
 WantedBy=multi-user.target
