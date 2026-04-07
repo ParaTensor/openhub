@@ -14,8 +14,12 @@ sudo apt-get install build-essential pkg-config libssl-dev curl git postgresql p
 
 # 1.1 Initialize Database if not exists
 echo "Initializing Database..."
-sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='xinference'" | grep -q 1 || sudo -u postgres psql -c "CREATE USER xinference WITH PASSWORD 'password' SUPERUSER;"
-sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw openhub || sudo -u postgres psql -c "CREATE DATABASE openhub OWNER xinference;"
+# Ensure postgresql is actively running before we try to connect
+sudo systemctl start postgresql || sudo systemctl restart postgresql || true
+sleep 3
+
+sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='xinference'" | grep -q 1 || sudo -u postgres psql -c "CREATE USER xinference WITH PASSWORD 'password' SUPERUSER;" || echo "Failed to create user, DB might be down"
+sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw openhub || sudo -u postgres psql -c "CREATE DATABASE openhub OWNER xinference;" || echo "Failed to create database, DB might be down"
 
 # 2. Check for Swap (Rust build needs it)
 if ! free | grep -i swap > /dev/null; then
