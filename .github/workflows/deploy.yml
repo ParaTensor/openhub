@@ -62,7 +62,7 @@ jobs:
             sudo rm -rf $DEST_DIR/gateway/src $DEST_DIR/gateway/migrations || true
             
             # Copy new files from TMP_DIR (automatically overwrites old files in gateway)
-            sudo cp -rn $TMP_DIR/* $DEST_DIR/ 2>/dev/null || sudo cp -r $TMP_DIR/* $DEST_DIR/
+            sudo cp -r $TMP_DIR/* $DEST_DIR/
             
             # Fix ownership
             sudo chown -R mac-m4:mac-m4 $DEST_DIR
