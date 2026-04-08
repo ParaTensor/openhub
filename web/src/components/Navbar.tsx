@@ -26,14 +26,17 @@ export default function Navbar() {
     {id: '/models', labelKey: 'navbar.models', icon: LayoutGrid},
     {id: '/rankings', labelKey: 'navbar.rankings', icon: BarChart3},
     {id: '/activity', labelKey: 'navbar.activity', icon: Activity},
-    {id: '/pricing', labelKey: 'navbar.pricing', icon: BadgeDollarSign},
-    {id: '/providers', labelKey: 'navbar.providers', icon: PlugZap},
+    {id: '/pricing', labelKey: 'navbar.pricing', icon: BadgeDollarSign, adminOnly: true},
+    {id: '/providers', labelKey: 'navbar.providers', icon: PlugZap, adminOnly: true},
     {id: '/chat', labelKey: 'navbar.chat', icon: MessageSquare},
     {id: '/docs', labelKey: 'navbar.docs', icon: BookOpen},
-    {id: '/hub', labelKey: 'navbar.hub', icon: Server},
+    {id: '/hub', labelKey: 'navbar.hub', icon: Server, adminOnly: true},
   ];
 
-  const filteredLinks = [...navLinks, {id: '/global-models', labelKey: 'navbar.global_models', icon: Database}];
+  const filteredLinks = [
+    ...navLinks.filter((link) => !link.adminOnly || localUser?.role === 'admin'),
+    ...(localUser?.role === 'admin' ? [{id: '/global-models', labelKey: 'navbar.global_models', icon: Database}] : [])
+  ];
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b border-gray-100">
@@ -68,7 +71,7 @@ export default function Navbar() {
             </div>
 
             <select 
-                value={i18n.language} 
+                value={i18n.language?.startsWith('zh') ? 'zh' : 'en'} 
                 onChange={(e) => i18n.changeLanguage(e.target.value)}
                 className="hidden sm:block bg-transparent outline-none cursor-pointer text-sm font-medium text-zinc-600 hover:text-black hover:bg-gray-50 border border-gray-100 rounded-md px-2 py-1"
             >

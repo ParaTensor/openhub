@@ -131,9 +131,11 @@ export default function ModelsView() {
                   <Zap size={10} className="text-emerald-500" />
                   {model.latency}
                 </div>
-                <Link to={`/models/${encodeURIComponent(model.id)}/providers`} className="flex items-center gap-1 text-xs font-bold text-zinc-900 opacity-0 group-hover:opacity-100 transition-all">
-                  {t('models.details')}<ArrowUpRight size={14} />
-                </Link>
+                {isAdmin && (
+                  <Link to={`/models/${encodeURIComponent(model.id)}/providers`} className="flex items-center gap-1 text-xs font-bold text-zinc-900 opacity-0 group-hover:opacity-100 transition-all">
+                    {t('models.details')}<ArrowUpRight size={14} />
+                  </Link>
+                )}
               </div>
             </div>
           ))
