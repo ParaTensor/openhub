@@ -12,6 +12,10 @@ echo "--- Starting Remote Build and Setup ---"
 echo "Stopping existing services..."
 sudo systemctl stop $HUB_SERVICE || true
 sudo systemctl stop $GATEWAY_SERVICE || true
+sudo systemctl stop xrouter-hub || true
+sudo systemctl stop xrouter-gateway || true
+sudo systemctl disable xrouter-hub || true
+sudo systemctl disable xrouter-gateway || true
 
 # 1. Update and install basic dependencies
 sudo apt-get update
