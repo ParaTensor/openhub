@@ -10,6 +10,7 @@ ExecStart=/home/mac-m4/openhub/gateway/bin/gateway
 Restart=always
 RestartSec=3
 Environment=RUST_LOG=info
+Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/openhub
 
 [Install]
 WantedBy=multi-user.target
