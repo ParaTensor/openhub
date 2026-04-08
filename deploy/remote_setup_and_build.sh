@@ -71,6 +71,7 @@ cargo build --release
 # 7.1 Reclaim disk space! (CRITICAL for 10GB GCP VMs)
 echo "Extracting binary and sweeping rust compilation caches..."
 mkdir -p $PROJECT_DIR/gateway/bin
+rm -f $PROJECT_DIR/gateway/bin/gateway || true
 cp target/release/gateway $PROJECT_DIR/gateway/bin/gateway
 rm -rf target/
 rm -rf ~/.cargo/registry/
