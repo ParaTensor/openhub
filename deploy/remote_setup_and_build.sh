@@ -30,6 +30,8 @@ fi
 echo "Initializing Database..."
 if command -v yum &> /dev/null; then
     sudo postgresql-setup --initdb || true
+    # Hotfix to prevent "Ident authentication failed" for local PostgreSQL connections on RHEL systems
+    sudo sed -i -e 's/ident/md5/g' -e 's/peer/md5/g' /var/lib/pgsql/data/pg_hba.conf || true
 fi
 sudo systemctl start postgresql || sudo systemctl restart postgresql || true
 sleep 3
