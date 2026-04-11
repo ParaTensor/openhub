@@ -50,14 +50,32 @@ fi
 # 3. Install Rustup if missing
 [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 
+export RUSTUP_DIST_SERVER="https://rsproxy.cn"
+export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+
 if ! command -v rustc &> /dev/null; then
     echo "Installing Rustup..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    curl --proto '=https' --tlsv1.2 -sSf https://rsproxy.cn/rustup-init.sh | sh -s -- -y
     source "$HOME/.cargo/env"
 else
     rustup update stable
     rustup toolchain list | grep -v stable | xargs -I {} rustup toolchain uninstall {} || true
 fi
+
+# Configure Cargo mirror to prevent slow downloads
+mkdir -p "$HOME/.cargo"
+cat << 'EOF' > "$HOME/.cargo/config.toml"
+[source.crates-io]
+replace-with = 'rsproxy-sparse'
+[source.rsproxy]
+registry = "https://rsproxy.cn/crates.io-index"
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+[registries.rsproxy]
+index = "https://rsproxy.cn/crates.io-index"
+[net]
+git-fetch-with-cli = true
+EOF
 
 # 4. Install Node.js if missing (using NodeSource)
 if ! command -v node &> /dev/null; then
@@ -79,6 +97,7 @@ cargo -V
 # 6. Build Node packages (Web and Hub + Packages)
 echo "Building Node workspace (Frontend / Hub / Shared)..."
 cd $PROJECT_DIR
+npm config set registry https://registry.npmmirror.com/
 npm install
 npm run build -w @openhub/web
 
