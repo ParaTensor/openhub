@@ -19,6 +19,8 @@ import { authenticate } from './middleware/auth';
 import keysRouter from './routes/keys';
 import activityRouter from './routes/activity';
 import billingRouter from './routes/billing';
+import rankingsRouter from './routes/rankings';
+import chatRouter from './routes/chat';
 
 const PORT = Number(process.env.PORT || 3322);
 
@@ -64,6 +66,8 @@ async function startServer() {
   app.use('/api/user-api-keys', keysRouter);
   app.use('/api/activity', activityRouter);
   app.use('/api/billing', billingRouter);
+  app.use('/api/rankings', rankingsRouter);
+  app.use('/api/chat', chatRouter);
 
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

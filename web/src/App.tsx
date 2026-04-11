@@ -13,7 +13,7 @@ import ProvidersView from './views/Providers';
 import ModelProvidersView from './views/ModelProviders';
 import GlobalModelsView from './views/GlobalModels';
 import LoginView from './views/Login';
-import {motion, AnimatePresence} from 'motion/react';
+import {motion} from 'motion/react';
 import {Link, Navigate, Route, Routes, useLocation} from 'react-router-dom';
 import {isAuthenticated} from './lib/session';
 
@@ -29,45 +29,44 @@ export default function App() {
 
   const authed = isAuthenticated();
   const isLoginRoute = location.pathname === '/login';
+  const isChatRoute = location.pathname.startsWith('/chat');
   const showShell = authed && !isLoginRoute;
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-black font-sans selection:bg-black selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#fafafa] text-black font-sans selection:bg-black selection:text-white">
       {showShell && <Navbar />}
 
-      <main className="min-h-screen">
-        <div className={showShell ? 'max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12' : ''}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`${location.pathname}:${authVersion}`}
-              initial={{opacity: 0, y: 10}}
-              animate={{opacity: 1, y: 0}}
-              exit={{opacity: 0, y: -10}}
-              transition={{duration: 0.2, ease: 'easeOut'}}
-            >
-              <Routes location={location}>
-                <Route path="/login" element={authed ? <Navigate to="/models" replace /> : <LoginView />} />
-                <Route path="/" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
-                <Route path="/models" element={authed ? <ModelsView /> : <Navigate to="/login" replace />} />
-                <Route path="/rankings" element={authed ? <RankingsView /> : <Navigate to="/login" replace />} />
-                <Route path="/activity" element={authed ? <ActivityView /> : <Navigate to="/login" replace />} />
-                <Route path="/pricing" element={authed ? <PricingView /> : <Navigate to="/login" replace />} />
-                <Route path="/providers" element={authed ? <ProvidersView /> : <Navigate to="/login" replace />} />
-                <Route path="/models/:modelId/providers" element={authed ? <ModelProvidersView /> : <Navigate to="/login" replace />} />
-                <Route path="/global-models" element={authed ? <GlobalModelsView /> : <Navigate to="/login" replace />} />
-                <Route path="/chat" element={authed ? <ChatView /> : <Navigate to="/login" replace />} />
-                <Route path="/docs" element={authed ? <DocsView /> : <Navigate to="/login" replace />} />
-                <Route path="/hub" element={authed ? <HubConsoleView /> : <Navigate to="/login" replace />} />
-                <Route path="/keys" element={authed ? <KeysView /> : <Navigate to="/login" replace />} />
-                <Route path="/settings" element={authed ? <SettingsView /> : <Navigate to="/login" replace />} />
-                <Route path="*" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
-              </Routes>
-            </motion.div>
-          </AnimatePresence>
+      <main className="flex-1 flex flex-col">
+        <div className={showShell && !isChatRoute ? 'max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1' : (isChatRoute ? 'flex-1 flex flex-col h-full' : '')}>
+          <motion.div
+            key={`${location.pathname}:${authVersion}`}
+            initial={{opacity: 0, y: 10}}
+            animate={{opacity: 1, y: 0}}
+            transition={{duration: 0.2, ease: 'easeOut'}}
+            className="flex-1 flex flex-col"
+          >
+            <Routes location={location}>
+              <Route path="/login" element={authed ? <Navigate to="/models" replace /> : <LoginView />} />
+              <Route path="/" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
+              <Route path="/models" element={authed ? <ModelsView /> : <Navigate to="/login" replace />} />
+              <Route path="/rankings" element={authed ? <RankingsView /> : <Navigate to="/login" replace />} />
+              <Route path="/activity" element={authed ? <ActivityView /> : <Navigate to="/login" replace />} />
+              <Route path="/pricing" element={authed ? <PricingView /> : <Navigate to="/login" replace />} />
+              <Route path="/providers" element={authed ? <ProvidersView /> : <Navigate to="/login" replace />} />
+              <Route path="/models/:modelId/providers" element={authed ? <ModelProvidersView /> : <Navigate to="/login" replace />} />
+              <Route path="/global-models" element={authed ? <GlobalModelsView /> : <Navigate to="/login" replace />} />
+              <Route path="/chat" element={authed ? <ChatView /> : <Navigate to="/login" replace />} />
+              <Route path="/docs" element={authed ? <DocsView /> : <Navigate to="/login" replace />} />
+              <Route path="/hub" element={authed ? <HubConsoleView /> : <Navigate to="/login" replace />} />
+              <Route path="/keys" element={authed ? <KeysView /> : <Navigate to="/login" replace />} />
+              <Route path="/settings" element={authed ? <SettingsView /> : <Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
+            </Routes>
+          </motion.div>
         </div>
       </main>
 
-      {showShell && <footer className="border-t bg-white">
+      {showShell && !isChatRoute && <footer className="border-t bg-white">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-1 md:col-span-1 space-y-4">

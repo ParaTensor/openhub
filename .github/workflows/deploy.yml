@@ -1,4 +1,4 @@
-name: GCP Deployment (Remote Build)
+name: Domestic Server Deployment
 on:
   push:
     branches: [ main ]
@@ -8,69 +8,49 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+      SERVER_IP: "1.13.23.141"
+      SERVER_USER: "root"
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          # Using the WIF Service Account from the 'xinference' project
-          workload_identity_provider: 'projects/346794112698/locations/global/workloadIdentityPools/xrouter-github-pool/providers/xrouter-github-provider'
-          service_account: 'xrouter-github-sa@xinference.iam.gserviceaccount.com'
-
-      - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          # Target project where the VM lives
-          project_id: 'gen-lang-client-0208597279'
-
-      - name: Sync Source and Build Remotely
-        shell: bash
+      - name: Setup SSH Key
         run: |
-          INSTANCE_NAME="instance-pararouter"
-          ZONE="us-central1-f"
-          PROJECT="gen-lang-client-0208597279"
-          DEST_DIR="/home/mac-m4/openhub"
-          TMP_DIR="/home/mac-m4/openhub-tmp"
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.DOMESTIC_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
+      - name: Sync Source to Server
+        run: |
+          DEST_DIR="/root/openhub"
+          TMP_DIR="/root/openhub-tmp"
+          
           echo "1. Preparing remote temporary directory and freeing space..."
-          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
-            sudo rm -rf $TMP_DIR
-            sudo apt-get clean
-            sudo journalctl --vacuum-time=12h || true
-            sudo rm -rf /root/.rustup /root/.cargo /home/mac-m4/.rustup /home/mac-m4/.cargo
-            sudo rm -rf /home/mac-m4/openhub/gateway/target  # VERY AGGRESSIVE: Clear Rust build cache to reclaim ~2GB+
-            sudo mkdir -p $TMP_DIR
-            sudo chown -R mac-m4:mac-m4 $TMP_DIR
+          ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
+            rm -rf $TMP_DIR
+            apt-get clean || true
+            journalctl --vacuum-time=12h || true
+            mkdir -p $TMP_DIR
           "
-
+          
           echo "2. Uploading files to temporary directory..."
-          gcloud compute scp --recurse deploy package.json package-lock.json gateway hub web packages mac-m4@$INSTANCE_NAME:$TMP_DIR/ --zone=$ZONE --project=$PROJECT --quiet
-
+          rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'target' -e "ssh -i ~/.ssh/deploy_key" ./deploy ./package.json ./package-lock.json ./gateway ./hub ./web ./packages $SERVER_USER@$SERVER_IP:$TMP_DIR/
+          
           echo "3. Moving files to final destination and building..."
-          gcloud compute ssh mac-m4@$INSTANCE_NAME --zone=$ZONE --project=$PROJECT --quiet --command="
-            # Create target
-            sudo mkdir -p $DEST_DIR
+          ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
+            mkdir -p $DEST_DIR
             
             # Wipe old app source folders but CAREFULLY PRESERVE gateway/target for Rust cache
-            sudo rm -rf $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
-            # For gateway, only remove src/ and migrations/ to preserve the target/ folder
-            sudo rm -rf $DEST_DIR/gateway/src $DEST_DIR/gateway/migrations || true
+            rm -rf $DEST_DIR/hub $DEST_DIR/web $DEST_DIR/packages $DEST_DIR/deploy
+            rm -rf $DEST_DIR/gateway/src $DEST_DIR/gateway/migrations || true
             
-            # Copy new files from TMP_DIR (automatically overwrites old files in gateway)
-            sudo cp -r $TMP_DIR/* $DEST_DIR/
-            
-            # Fix ownership
-            sudo chown -R mac-m4:mac-m4 $DEST_DIR
+            # Copy new files from TMP_DIR
+            cp -r $TMP_DIR/* $DEST_DIR/
             
             # Execute setup script
             cd $DEST_DIR
-            sudo chmod +x deploy/remote_setup_and_build.sh
-            sudo bash deploy/remote_setup_and_build.sh
+            chmod +x deploy/remote_setup_and_build.sh
+            bash deploy/remote_setup_and_build.sh
           "

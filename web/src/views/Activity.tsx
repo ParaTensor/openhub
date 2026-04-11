@@ -5,41 +5,40 @@ import {apiGet} from '../lib/api';
 import {localUser} from '../lib/session';
 import { useTranslation } from "react-i18next";
 
-const initialData = [
-  {date: 'Mar 23', tokens: 45000, cost: 0.12},
-  {date: 'Mar 24', tokens: 52000, cost: 0.15},
-  {date: 'Mar 25', tokens: 38000, cost: 0.08},
-  {date: 'Mar 26', tokens: 65000, cost: 0.22},
-  {date: 'Mar 27', tokens: 85000, cost: 0.35},
-  {date: 'Mar 28', tokens: 72000, cost: 0.28},
-  {date: 'Mar 29', tokens: 95000, cost: 0.42},
-];
-
-const initialLogs = [
-  {id: '1', time: '10:15:22', date: '2024-03-29', model: 'claude-3.5-sonnet', tokens: 1240, cost: '$0.018', status: 'Success', latency: '1.2s'},
-  {id: '2', time: '10:12:05', date: '2024-03-29', model: 'gpt-4o', tokens: 850, cost: '$0.012', status: 'Success', latency: '0.8s'},
-  {id: '3', time: '09:55:10', date: '2024-03-29', model: 'llama-3.1-405b', tokens: 2100, cost: '$0.004', status: 'Success', latency: '1.5s'},
-  {id: '4', time: '09:42:33', date: '2024-03-29', model: 'deepseek-chat', tokens: 4500, cost: '$0.001', status: 'Success', latency: '0.5s'},
-  {id: '5', time: '09:30:15', date: '2024-03-29', model: 'claude-3.5-sonnet', tokens: 520, cost: '$0.007', status: 'Success', latency: '1.1s'},
-];
+interface ActivityStats {
+  summary: {
+    totalTokens: number;
+    totalCost: number;
+    avgLatency: number;
+    changes: {
+      tokens: string | null;
+      cost: string | null;
+      latency: string | null;
+    };
+  };
+  trend: Array<{
+    date: string;
+    tokens: number;
+    cost: number;
+  }>;
+}
 
 export default function ActivityView() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<any[]>([]);
+  const [stats, setStats] = useState<ActivityStats | null>(null);
   const [loading, setLoading] = useState(true);
   const isAdmin = localUser.role === 'admin';
 
   useEffect(() => {
-    if (!isAdmin) {
-      setLogs(initialLogs);
-      setLoading(false);
-      return;
-    }
-
-    const loadActivity = async () => {
+    const loadAll = async () => {
       try {
-        const rows = await apiGet<any[]>('/api/activity?limit=50');
-        const logsData = rows.map((row) => {
+        const [logsRow, statsData] = await Promise.all([
+          apiGet<any[]>('/api/activity?limit=50'),
+          apiGet<ActivityStats>('/api/activity/stats')
+        ]);
+
+        const logsData = logsRow.map((row) => {
           const dateObj = new Date(Number(row.timestamp));
           return {
             id: String(row.id),
@@ -52,17 +51,18 @@ export default function ActivityView() {
             latency: `${((row.latency || 0) / 1000).toFixed(1)}s`,
           };
         });
-        setLogs(logsData.length > 0 ? logsData : initialLogs);
+
+        setLogs(logsData);
+        setStats(statsData);
       } catch (error) {
         console.error('Load activity failed:', error);
-        setLogs(initialLogs);
       } finally {
         setLoading(false);
       }
     };
 
-    loadActivity();
-  }, [isAdmin]);
+    loadAll();
+  }, [isAdmin, t]);
 
   if (loading) {
     return (
@@ -71,6 +71,13 @@ export default function ActivityView() {
       </div>
     );
   }
+
+  const summary = stats?.summary || {
+    totalTokens: 0,
+    totalCost: 0,
+    avgLatency: 0,
+    changes: { tokens: null, cost: null, latency: null }
+  };
 
   return (
     <div className="space-y-8">
@@ -96,37 +103,49 @@ export default function ActivityView() {
             <p className="text-[11px] font-bold uppercase tracking-widest">{t('activity.total_tokens')}</p>
           </div>
           <h3 className="text-3xl font-bold tracking-tight">
-            {logs.reduce((acc, log) => acc + (typeof log.tokens === 'number' ? log.tokens : 0), 0).toLocaleString()}
+            {summary.totalTokens.toLocaleString()}
           </h3>
-          <div className="flex items-center gap-1.5 mt-2">
-            <TrendingUp size={12} className="text-emerald-500" />
-            <span className="text-xs font-bold text-emerald-600">{t('activity.12')}</span>
-            <span className="text-[10px] text-zinc-400 font-medium">{t('activity.vs_last_week')}</span>
-          </div>
+          {summary.changes.tokens && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <TrendingUp size={12} className={summary.changes.tokens.startsWith('+') ? "text-emerald-500" : "text-red-500"} />
+              <span className={`text-xs font-bold ${summary.changes.tokens.startsWith('+') ? "text-emerald-600" : "text-red-600"}`}>
+                {summary.changes.tokens}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-medium">{t('activity.vs_last_week')}</span>
+            </div>
+          )}
         </div>
         <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 text-zinc-400 mb-2">
             <DollarSign size={14} />
             <p className="text-[11px] font-bold uppercase tracking-widest">{t('activity.total_cost')}</p>
           </div>
-          <h3 className="text-3xl font-bold tracking-tight">{t('activity.1_62')}</h3>
-          <div className="flex items-center gap-1.5 mt-2">
-            <TrendingUp size={12} className="text-emerald-500" />
-            <span className="text-xs font-bold text-emerald-600">{t('activity.8')}</span>
-            <span className="text-[10px] text-zinc-400 font-medium">{t('activity.vs_last_week')}</span>
-          </div>
+          <h3 className="text-3xl font-bold tracking-tight">${summary.totalCost.toFixed(2)}</h3>
+          {summary.changes.cost && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <TrendingUp size={12} className={summary.changes.cost.startsWith('+') ? "text-emerald-500" : "text-red-500"} />
+              <span className={`text-xs font-bold ${summary.changes.cost.startsWith('+') ? "text-emerald-600" : "text-red-600"}`}>
+                {summary.changes.cost}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-medium">{t('activity.vs_last_week')}</span>
+            </div>
+          )}
         </div>
         <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 text-zinc-400 mb-2">
             <Clock size={14} />
             <p className="text-[11px] font-bold uppercase tracking-widest">{t('activity.avg_latency')}</p>
           </div>
-          <h3 className="text-3xl font-bold tracking-tight">{t('activity.1_2s')}</h3>
-          <div className="flex items-center gap-1.5 mt-2">
-            <TrendingUp size={12} className="text-red-500 rotate-180" />
-            <span className="text-xs font-bold text-red-600">{t('activity.5')}</span>
-            <span className="text-[10px] text-zinc-400 font-medium">{t('activity.vs_last_week')}</span>
-          </div>
+          <h3 className="text-3xl font-bold tracking-tight">{(summary.avgLatency / 1000).toFixed(2)}s</h3>
+          {summary.changes.latency && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <TrendingUp size={12} className={summary.changes.latency.startsWith('-') ? "text-emerald-500 rotate-180" : "text-red-500"} />
+              <span className={`text-xs font-bold ${summary.changes.latency.startsWith('-') ? "text-emerald-600" : "text-red-600"}`}>
+                {summary.changes.latency}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-medium">{t('activity.vs_last_week')}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -135,29 +154,35 @@ export default function ActivityView() {
           <h3 className="font-bold text-sm uppercase tracking-widest text-zinc-400">{t('activity.token_usage_history')}</h3>
         </div>
         <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={initialData}>
-              <defs>
-                <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#000" stopOpacity={0.05} />
-                  <stop offset="95%" stopColor="#000" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#a1a1aa', fontWeight: 600}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#a1a1aa', fontWeight: 600}} />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: '12px',
-                  border: '1px solid #f4f4f5',
-                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                }}
-              />
-              <Area type="monotone" dataKey="tokens" stroke="#000" fillOpacity={1} fill="url(#colorTokens)" strokeWidth={2} animationDuration={1500} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {stats?.trend && stats.trend.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stats.trend}>
+                <defs>
+                  <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#000" stopOpacity={0.05} />
+                    <stop offset="95%" stopColor="#000" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#a1a1aa', fontWeight: 600}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#a1a1aa', fontWeight: 600}} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid #f4f4f5',
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                  }}
+                />
+                <Area type="monotone" dataKey="tokens" stroke="#000" fillOpacity={1} fill="url(#colorTokens)" strokeWidth={2} animationDuration={1500} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center text-zinc-400 text-sm italic">
+              No trend data available for the last 7 days.
+            </div>
+          )}
         </div>
       </div>
 
@@ -200,7 +225,11 @@ export default function ActivityView() {
                   </td>
                   <td className="px-6 py-4 text-xs font-bold text-zinc-900">{log.cost}</td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                      log.status === t('activity.success') 
+                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                        : 'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
                       {log.status}
                     </span>
                   </td>
@@ -208,6 +237,11 @@ export default function ActivityView() {
               ))}
             </tbody>
           </table>
+          {logs.length === 0 && (
+            <div className="px-6 py-12 text-center text-zinc-500 italic">
+              No recent requests found.
+            </div>
+          )}
         </div>
       </div>
     </div>

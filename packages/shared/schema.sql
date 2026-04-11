@@ -118,9 +118,13 @@ CREATE TABLE IF NOT EXISTS gateways (
 CREATE TABLE IF NOT EXISTS llm_models (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  provider TEXT,
   description TEXT,
   context_length INTEGER,
   global_pricing JSONB NOT NULL DEFAULT '{}'::jsonb,
+  score DOUBLE PRECISION,
+  trend TEXT,
+  category TEXT,
   updated_at BIGINT NOT NULL
 );
 
@@ -144,6 +148,7 @@ CREATE TABLE IF NOT EXISTS model_provider_pricings (
   is_top_provider BOOLEAN NOT NULL DEFAULT false,
   status TEXT NOT NULL DEFAULT 'online',
   version TEXT NOT NULL,
+  provider_model_id TEXT,
   updated_at BIGINT NOT NULL,
   PRIMARY KEY (model_id, provider_account_id, provider_key_id, version),
   CHECK (
@@ -170,6 +175,7 @@ CREATE TABLE IF NOT EXISTS model_provider_pricings_draft (
   latency_ms INTEGER,
   is_top_provider BOOLEAN NOT NULL DEFAULT false,
   status TEXT NOT NULL DEFAULT 'online',
+  provider_model_id TEXT,
   updated_at BIGINT NOT NULL,
   PRIMARY KEY (model_id, provider_account_id, provider_key_id),
   CHECK (
@@ -251,6 +257,9 @@ ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS cache_read_co
 ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS cache_write_cost DOUBLE PRECISION;
 ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS reasoning_cost DOUBLE PRECISION;
 
+ALTER TABLE model_provider_pricings ADD COLUMN IF NOT EXISTS provider_model_id TEXT;
+ALTER TABLE model_provider_pricings_draft ADD COLUMN IF NOT EXISTS provider_model_id TEXT;
+
 -- Gateway legacy alter tables
 ALTER TABLE model_pricings ADD COLUMN IF NOT EXISTS cache_read_price DOUBLE PRECISION;
 ALTER TABLE model_pricings ADD COLUMN IF NOT EXISTS cache_write_price DOUBLE PRECISION;
@@ -279,3 +288,9 @@ CREATE TABLE IF NOT EXISTS billing_records (
 );
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS balance DOUBLE PRECISION NOT NULL DEFAULT 10.0;
+
+-- Additional LLM Model fields for rankings
+ALTER TABLE llm_models ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
+ALTER TABLE llm_models ADD COLUMN IF NOT EXISTS trend TEXT;
+ALTER TABLE llm_models ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE llm_models ADD COLUMN IF NOT EXISTS provider TEXT;

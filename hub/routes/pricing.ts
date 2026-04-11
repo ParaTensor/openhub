@@ -18,7 +18,7 @@ router.get('/', async (_req, res) => {
   const currentVersion = stateResult.rows[0]?.current_version || 'bootstrap';
   const { rows } = await pool.query(
     `SELECT model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-            reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, version, updated_at
+            reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, version, provider_model_id, updated_at
      FROM model_provider_pricings
      WHERE version = $1
      ORDER BY model_id ASC, provider_account_id ASC, provider_key_id ASC`,
@@ -30,7 +30,7 @@ router.get('/', async (_req, res) => {
 router.get('/draft', async (_req, res) => {
   const { rows } = await pool.query(
     `SELECT model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-            reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, updated_at
+            reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, provider_model_id, updated_at
      FROM model_provider_pricings_draft
      ORDER BY model_id ASC, provider_account_id ASC, provider_key_id ASC`,
   );
@@ -63,9 +63,9 @@ router.put('/draft', async (req, res) => {
   await pool.query(
     `INSERT INTO model_provider_pricings_draft (
        model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-       reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, updated_at
+       reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, provider_model_id, updated_at
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
      ON CONFLICT (model_id, provider_account_id, provider_key_id)
      DO UPDATE SET
        price_mode = EXCLUDED.price_mode,
@@ -85,6 +85,7 @@ router.put('/draft', async (req, res) => {
        latency_ms = EXCLUDED.latency_ms,
        is_top_provider = EXCLUDED.is_top_provider,
        status = EXCLUDED.status,
+       provider_model_id = EXCLUDED.provider_model_id,
        updated_at = EXCLUDED.updated_at`,
     [
       modelId,
@@ -107,6 +108,7 @@ router.put('/draft', async (req, res) => {
       payload.latency_ms ?? null,
       Boolean(payload.is_top_provider),
       payload.status || 'online',
+      payload.provider_model_id || null,
       Date.now(),
     ],
   );
@@ -290,10 +292,10 @@ router.post('/publish', async (req, res) => {
     await client.query(
       `INSERT INTO model_provider_pricings (
          model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-         reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, version, updated_at
+         reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, version, provider_model_id, updated_at
        )
        SELECT model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-              reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, $1, updated_at
+              reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, $1, provider_model_id, updated_at
        FROM model_provider_pricings
        WHERE version = $2
          AND NOT EXISTS (
@@ -310,10 +312,10 @@ router.post('/publish', async (req, res) => {
       await client.query(
         `INSERT INTO model_provider_pricings (
            model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-           reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, version, updated_at
+           reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, version, provider_model_id, updated_at
          )
          SELECT model_id, provider_account_id, provider_key_id, price_mode, input_cost, output_cost, cache_read_cost, cache_write_cost, reasoning_cost, input_price, output_price, cache_read_price, cache_write_price,
-                reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, $1, updated_at
+                reasoning_price, markup_rate, currency, context_length, latency_ms, is_top_provider, status, $1, provider_model_id, updated_at
          FROM model_provider_pricings_draft`,
         [version],
       );

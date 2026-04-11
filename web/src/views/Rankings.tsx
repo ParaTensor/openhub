@@ -1,47 +1,61 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, TrendingUp, Zap, DollarSign, Award } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { apiGet } from '../lib/api';
+
+interface ModelRanking {
+  id: string;
+  name: string;
+  provider: string;
+  score: number;
+  latency: string;
+  cost: string;
+  trend: string;
+}
+
+interface RankingStats {
+  topGainer: { name: string; score: number } | null;
+  fastest: { name: string; latency: string } | null;
+  bestValue: { name: string; cost: string } | null;
+}
 
 export default function RankingsView() {
-    const { t } = useTranslation();
-  const rankings = [
-    {
-      id: '1',
-      name: 'Claude 3.5 Sonnet',
-      provider: 'Anthropic',
-      score: 92.4,
-      latency: '1.2s',
-      cost: '$3.00',
-      trend: 'up'
-    },
-    {
-      id: '2',
-      name: 'GPT-4o',
-      provider: 'OpenAI',
-      score: 91.8,
-      latency: '0.9s',
-      cost: '$5.00',
-      trend: 'down'
-    },
-    {
-      id: '3',
-      name: 'Llama 3.1 405B',
-      provider: 'Meta',
-      score: 89.5,
-      latency: '2.1s',
-      cost: '$1.50',
-      trend: 'up'
-    },
-    {
-      id: '4',
-      name: 'Gemini 1.5 Pro',
-      provider: 'Google',
-      score: 88.2,
-      latency: '1.5s',
-      cost: '$3.50',
-      trend: 'stable'
+  const { t } = useTranslation();
+  const [rankings, setRankings] = useState<ModelRanking[]>([]);
+  const [stats, setStats] = useState<RankingStats>({
+    topGainer: null,
+    fastest: null,
+    bestValue: null
+  });
+  const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState('Overall');
+
+  useEffect(() => {
+    async function loadRankings() {
+      setLoading(true);
+      try {
+        const url = selectedTab === 'Overall' 
+          ? '/api/rankings' 
+          : `/api/rankings?category=${selectedTab}`;
+        const data = await apiGet<{ models: ModelRanking[], stats: RankingStats }>(url);
+        setRankings(data.models);
+        setStats(data.stats);
+      } catch (error) {
+        console.error('Failed to load rankings:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+    loadRankings();
+  }, [selectedTab]);
+
+  if (loading && rankings.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -56,10 +70,11 @@ export default function RankingsView() {
         </div>
         
         <div className="flex bg-white border border-zinc-100 rounded-xl p-1 shadow-sm">
-          {['Overall', 'Coding', 'Reasoning', 'Creative'].map((tab, i) => (
+          {['Overall', 'Coding', 'Reasoning', 'Creative'].map((tab) => (
             <button 
-              key={i}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${i === 0 ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-black'}`}
+              key={tab}
+              onClick={() => setSelectedTab(tab)}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${selectedTab === tab ? 'bg-zinc-900 text-white shadow-lg scale-105' : 'text-zinc-500 hover:text-black hover:bg-zinc-50'}`}
             >
               {tab}
             </button>
@@ -75,8 +90,8 @@ export default function RankingsView() {
             </div>
             <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{t('rankings.top_gainer')}</span>
           </div>
-          <h3 className="text-sm font-bold text-zinc-500 mb-1">{t('rankings.claude_3_5_sonnet')}</h3>
-          <p className="text-2xl font-black">{t('rankings.4_2_pts')}</p>
+          <h3 className="text-sm font-bold text-zinc-500 mb-1">{stats.topGainer?.name || '---'}</h3>
+          <p className="text-2xl font-black">{stats.topGainer ? `${stats.topGainer.score} pts` : '---'}</p>
         </div>
         <div className="bg-white border border-zinc-100 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
@@ -85,8 +100,8 @@ export default function RankingsView() {
             </div>
             <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{t('rankings.fastest')}</span>
           </div>
-          <h3 className="text-sm font-bold text-zinc-500 mb-1">{t('rankings.gpt_4o')}</h3>
-          <p className="text-2xl font-black">{t('rankings.0_9s_avg')}</p>
+          <h3 className="text-sm font-bold text-zinc-500 mb-1">{stats.fastest?.name || '---'}</h3>
+          <p className="text-2xl font-black">{stats.fastest?.latency || '---'}</p>
         </div>
         <div className="bg-white border border-zinc-100 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
@@ -95,8 +110,8 @@ export default function RankingsView() {
             </div>
             <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{t('rankings.best_value')}</span>
           </div>
-          <h3 className="text-sm font-bold text-zinc-500 mb-1">{t('rankings.llama_3_1_70b')}</h3>
-          <p className="text-2xl font-black">{t('rankings.0_60_1m')}</p>
+          <h3 className="text-sm font-bold text-zinc-500 mb-1">{stats.bestValue?.name || '---'}</h3>
+          <p className="text-2xl font-black">{stats.bestValue?.cost || '---'}</p>
         </div>
       </div>
 
@@ -150,6 +165,11 @@ export default function RankingsView() {
             ))}
           </tbody>
           </table>
+          {rankings.length === 0 && (
+            <div className="px-6 py-12 text-center text-zinc-500">
+              No models found in the leaderboard.
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-PROJECT_DIR="/home/mac-m4/openhub"
+PROJECT_DIR="/root/openhub"
 HUB_SERVICE="openhub-hub"
 GATEWAY_SERVICE="openhub-gateway"
 
@@ -88,7 +88,7 @@ sudo cp $PROJECT_DIR/deploy/openhub-hub.service /etc/systemd/system/openhub-hub.
 sudo cp $PROJECT_DIR/deploy/openhub-gateway.service /etc/systemd/system/openhub-gateway.service
 sudo systemctl daemon-reload
 
-sudo chown -R mac-m4:mac-m4 $PROJECT_DIR
+sudo chown -R root:root $PROJECT_DIR
 
 # 9. Start services
 echo "Starting services..."

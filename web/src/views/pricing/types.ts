@@ -1,5 +1,6 @@
 export type PricingRow = {
   model: string;
+  provider_model_id?: string | null;
   provider_account_id?: string | null;
   price_mode: 'fixed' | 'markup';
   input_cost?: number | null;

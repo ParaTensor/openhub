@@ -109,6 +109,11 @@ export default function PricingTable({
                     <button onClick={() => navigate(`/models/${encodeURIComponent(row.model)}/providers`)} className="hover:underline underline-offset-2 text-left">
                       {row.model}
                     </button>
+                    {row.provider_model_id && (
+                      <div className="text-[10px] text-zinc-500 font-normal mt-0.5" title="Provider Model Alias">
+                        alias: {row.provider_model_id}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-3 text-sm text-zinc-600">{row.provider_account_id || '-'}</td>
                   <td className="px-3 py-3 text-sm font-mono text-zinc-800 whitespace-nowrap">{fmtPrice(row.input_price)}</td>

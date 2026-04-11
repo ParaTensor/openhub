@@ -4,9 +4,9 @@ After=network.target openhub-hub.service
 
 [Service]
 Type=simple
-User=mac-m4
-WorkingDirectory=/home/mac-m4/openhub/gateway
-ExecStart=/home/mac-m4/openhub/gateway/bin/gateway
+User=root
+WorkingDirectory=/root/openhub/gateway
+ExecStart=/root/openhub/gateway/bin/gateway
 Restart=always
 RestartSec=3
 Environment=RUST_LOG=info

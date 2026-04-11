@@ -267,6 +267,7 @@ pub struct ModelProviderPricingRecord {
     pub is_top_provider: bool,
     pub status: String,
     pub version: String,
+    pub provider_model_id: Option<String>,
     pub updated_at: i64,
 }
 

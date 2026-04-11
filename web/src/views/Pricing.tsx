@@ -56,6 +56,7 @@ export default function PricingView() {
 
   const [formPriceMode, setFormPriceMode] = React.useState<'fixed' | 'markup'>('fixed');
   const [model, setModel] = React.useState('');
+  const [providerModelId, setProviderModelId] = React.useState('');
   const [modelQuery, setModelQuery] = React.useState('');
   const [providerAccountId, setProviderAccountId] = React.useState('');
   const [inputCost, setInputCost] = React.useState('');
@@ -129,6 +130,7 @@ export default function PricingView() {
   const openCreateDrawer = () => {
     setFormPriceMode('fixed');
     setModel('');
+    setProviderModelId('');
     setModelQuery('');
     const allKeys = providerKeyRows.flatMap(p => (p.keys || []).filter(k => !!k.id).map(k => ({ id: k.id, provider: p.provider })));
     if (allKeys.length > 0) {
@@ -169,6 +171,7 @@ export default function PricingView() {
     const numberText = (value?: number | null) => (typeof value === 'number' ? String(value) : '');
     setFormPriceMode('fixed');
     setModel(row.model);
+    setProviderModelId(row.provider_model_id || '');
     setModelQuery('');
     setProviderAccountId(row.provider_account_id || '');
     setInputCost(numberText(row.input_cost));
@@ -192,6 +195,7 @@ export default function PricingView() {
     const mode = 'fixed';
     const payload: Record<string, unknown> = {
       model: model.trim(),
+      provider_model_id: providerModelId ? providerModelId.trim() : null,
       provider_account_id: providerAccountId,
       price_mode: mode,
       currency: 'USD',
@@ -396,6 +400,7 @@ export default function PricingView() {
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         model={model} setModel={setModel}
+        providerModelId={providerModelId} setProviderModelId={setProviderModelId}
         modelQuery={modelQuery} setModelQuery={setModelQuery}
         providerAccountId={providerAccountId} setProviderAccountId={setProviderAccountId}
         providerKeyId={providerKeyId} setProviderKeyId={setProviderKeyId}

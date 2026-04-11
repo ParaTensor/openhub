@@ -10,6 +10,8 @@ interface EditPriceModalProps {
   onClose: () => void;
   model: string;
   setModel: (m: string) => void;
+  providerModelId: string;
+  setProviderModelId: (m: string) => void;
   modelQuery: string;
   setModelQuery: (q: string) => void;
   providerAccountId: string;
@@ -59,7 +61,7 @@ interface EditPriceModalProps {
 
 export default function EditPriceModal({
   isOpen, onClose,
-  model, setModel, modelQuery, setModelQuery,
+  model, setModel, providerModelId, setProviderModelId, modelQuery, setModelQuery,
   providerAccountId, setProviderAccountId, providerKeyId, setProviderKeyId,
   formPriceMode, setFormPriceMode,
   inputCost, setInputCost, outputCost, setOutputCost,
@@ -327,6 +329,19 @@ export default function EditPriceModal({
                           );
                         }) as any}
                       </Combobox>
+                    </div>
+
+                    <div className="space-y-2 col-span-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
+                        {t('editpricemodal.provider_model_id', 'Provider Model Alias (Optional)')}
+                      </label>
+                      <input
+                        type="text"
+                        value={providerModelId}
+                        onChange={(e) => setProviderModelId(e.target.value)}
+                        placeholder={t('editpricemodal.placeholder_alias', 'Leave empty to use Model Name above')}
+                        className="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-950 transition-all text-sm"
+                      />
                     </div>
                   </div>
                   

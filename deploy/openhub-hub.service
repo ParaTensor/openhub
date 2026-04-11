@@ -4,12 +4,12 @@ After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=mac-m4
-WorkingDirectory=/home/mac-m4/openhub
+User=root
+WorkingDirectory=/root/openhub
 ExecStart=/usr/bin/npm run dev -w @openhub/hub
 Restart=always
 RestartSec=3
-EnvironmentFile=-/home/mac-m4/.openhub.env
+EnvironmentFile=-/root/.openhub.env
 Environment=PORT=3000
 Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/openhub
 

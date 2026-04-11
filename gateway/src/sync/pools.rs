@@ -52,6 +52,35 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
 
     info!("Pool sync: found {} active provider API keys", keys.len());
 
+    #[derive(sqlx::FromRow)]
+    struct PricingMappingRow {
+        model_id: String,
+        provider_account_id: String,
+        provider_model_id: Option<String>,
+    }
+
+    let mappings = sqlx::query_as::<_, PricingMappingRow>(
+        r#"
+        SELECT model_id, provider_account_id, provider_model_id 
+        FROM model_provider_pricings 
+        WHERE status = 'online'
+        "#,
+    )
+    .fetch_all(db)
+    .await?;
+
+    let mut account_model_mappings: HashMap<String, HashMap<String, String>> = HashMap::new();
+    for mapping in mappings {
+        if let Some(alias) = mapping.provider_model_id {
+            if !alias.trim().is_empty() {
+                account_model_mappings
+                    .entry(mapping.provider_account_id)
+                    .or_default()
+                    .insert(mapping.model_id, alias);
+            }
+        }
+    }
+
     let mut pool_endpoints: HashMap<String, Vec<Endpoint>> = HashMap::new();
     for key in keys {
         if let Some(account) = account_map.get(&key.provider_account_id) {
@@ -71,7 +100,10 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
                 driver_id: driver_id.to_string(),
                 base_url: account.base_url.clone(),
                 api_key: SecretString::new(key.api_key),
-                model_policy: ModelPolicy::default(),
+                model_policy: ModelPolicy {
+                    default_model: None,
+                    model_mapping: account_model_mappings.get(&account.id).cloned().unwrap_or_default(),
+                },
                 enabled: true,
                 metadata: HashMap::new(),
             };
