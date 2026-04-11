@@ -18,11 +18,19 @@ sudo systemctl disable xrouter-hub || true
 sudo systemctl disable xrouter-gateway || true
 
 # 1. Update and install basic dependencies
-sudo apt-get update
-sudo apt-get install build-essential pkg-config libssl-dev curl git postgresql postgresql-contrib -y
+if command -v yum &> /dev/null; then
+    sudo yum update -y || true
+    sudo yum install -y gcc gcc-c++ make pkgconfig openssl-devel curl git postgresql-server postgresql-contrib
+else
+    sudo apt-get update
+    sudo apt-get install build-essential pkg-config libssl-dev curl git postgresql postgresql-contrib -y
+fi
 
 # 1.1 Initialize Database if not exists
 echo "Initializing Database..."
+if command -v yum &> /dev/null; then
+    sudo postgresql-setup --initdb || true
+fi
 sudo systemctl start postgresql || sudo systemctl restart postgresql || true
 sleep 3
 
@@ -54,8 +62,13 @@ fi
 # 4. Install Node.js if missing (using NodeSource)
 if ! command -v node &> /dev/null; then
     echo "Installing Node.js 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    if command -v yum &> /dev/null; then
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+        sudo yum install -y nodejs
+    else
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    fi
 fi
 
 # 5. Output versions

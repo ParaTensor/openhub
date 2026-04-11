@@ -30,7 +30,7 @@ jobs:
           echo "1. Preparing remote temporary directory and freeing space..."
           ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
             rm -rf $TMP_DIR
-            apt-get clean || true
+            yum clean all || apt-get clean || true
             journalctl --vacuum-time=12h || true
             mkdir -p $TMP_DIR
           "
