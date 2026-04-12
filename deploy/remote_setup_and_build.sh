@@ -120,6 +120,7 @@ rm -rf /root/.cargo/registry/
 echo "Configuring Systemd Services..."
 sudo cp $PROJECT_DIR/deploy/openhub-hub.service /etc/systemd/system/openhub-hub.service
 sudo cp $PROJECT_DIR/deploy/openhub-gateway.service /etc/systemd/system/openhub-gateway.service
+sudo cp $PROJECT_DIR/deploy/nginx/openhub.conf /etc/nginx/conf.d/openhub.conf || true
 sudo systemctl daemon-reload
 
 sudo chown -R root:root $PROJECT_DIR
@@ -128,7 +129,7 @@ sudo chown -R root:root $PROJECT_DIR
 if [ -n "$TUNNEL_TOKEN" ]; then
     echo "Installing Cloudflare Tunnel (cloudflared)..."
     if ! command -v cloudflared &> /dev/null; then
-        curl -L --output cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+        curl -L --output cloudflared "https://mirror.ghproxy.com/https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64" || curl -L --output cloudflared "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
         chmod +x cloudflared
         sudo mv cloudflared /usr/local/bin/
     fi
@@ -144,5 +145,6 @@ sudo systemctl enable $HUB_SERVICE
 sudo systemctl enable $GATEWAY_SERVICE
 sudo systemctl start $HUB_SERVICE
 sudo systemctl start $GATEWAY_SERVICE
+sudo systemctl restart nginx || true
 
 echo "--- Deployment Complete ---"
