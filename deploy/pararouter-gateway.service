@@ -1,0 +1,16 @@
+[Unit]
+Description=Pararouter Rust Gateway
+After=network.target pararouter-hub.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/pararouter/gateway
+ExecStart=/home/ubuntu/pararouter/gateway/bin/gateway
+Restart=always
+RestartSec=3
+Environment=RUST_LOG=info
+Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/pararouter
+
+[Install]
+WantedBy=multi-user.target

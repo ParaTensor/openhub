@@ -1,18 +1,18 @@
 [Unit]
-Description=OpenHub Node Service (Hub)
+Description=Pararouter Node Service (Hub)
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/root/openhub
+User=ubuntu
+WorkingDirectory=/home/ubuntu/pararouter
 ExecStart=/usr/bin/npm run dev -w @openhub/hub
 Restart=always
 RestartSec=3
-EnvironmentFile=-/root/.openhub.env
+EnvironmentFile=-/home/ubuntu/.pararouter.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
-Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/openhub
+Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/pararouter
 
 [Install]
 WantedBy=multi-user.target

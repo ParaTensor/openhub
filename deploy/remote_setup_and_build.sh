@@ -2,9 +2,9 @@
 set -e
 
 # Configuration
-PROJECT_DIR="/root/openhub"
-HUB_SERVICE="openhub-hub"
-GATEWAY_SERVICE="openhub-gateway"
+PROJECT_DIR="$HOME/pararouter"
+HUB_SERVICE="pararouter-hub"
+GATEWAY_SERVICE="pararouter-gateway"
 
 echo "--- Starting Remote Build and Setup ---"
 
@@ -16,6 +16,10 @@ sudo systemctl stop xrouter-hub || true
 sudo systemctl stop xrouter-gateway || true
 sudo systemctl disable xrouter-hub || true
 sudo systemctl disable xrouter-gateway || true
+sudo systemctl stop openhub-hub || true
+sudo systemctl stop openhub-gateway || true
+sudo systemctl disable openhub-hub || true
+sudo systemctl disable openhub-gateway || true
 
 # 1. Update and install basic dependencies
 if command -v yum &> /dev/null; then
@@ -37,7 +41,7 @@ sudo systemctl start postgresql || sudo systemctl restart postgresql || true
 sleep 3
 
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='xinference'" | grep -q 1 || sudo -u postgres psql -c "CREATE USER xinference WITH PASSWORD 'password' SUPERUSER;" || echo "Failed to create user, DB might be down"
-sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw openhub || sudo -u postgres psql -c "CREATE DATABASE openhub OWNER xinference;" || echo "Failed to create database, DB might be down"
+sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw pararouter || sudo -u postgres psql -c "CREATE DATABASE pararouter OWNER xinference;" || echo "Failed to create database, DB might be down"
 
 # 2. Check for Swap (Rust build needs it)
 if ! free | grep -i swap > /dev/null; then
@@ -114,16 +118,15 @@ mkdir -p $PROJECT_DIR/gateway/bin
 cp target/release/gateway $PROJECT_DIR/gateway/bin/gateway
 rm -rf target/
 rm -rf ~/.cargo/registry/
-rm -rf /root/.cargo/registry/
 
 # 8. Install service files and fix ownership
 echo "Configuring Systemd Services..."
-sudo cp $PROJECT_DIR/deploy/openhub-hub.service /etc/systemd/system/openhub-hub.service
-sudo cp $PROJECT_DIR/deploy/openhub-gateway.service /etc/systemd/system/openhub-gateway.service
-sudo cp $PROJECT_DIR/deploy/nginx/openhub.conf /etc/nginx/conf.d/openhub.conf || true
+sudo cp $PROJECT_DIR/deploy/pararouter-hub.service /etc/systemd/system/pararouter-hub.service
+sudo cp $PROJECT_DIR/deploy/pararouter-gateway.service /etc/systemd/system/pararouter-gateway.service
+sudo cp $PROJECT_DIR/deploy/nginx/pararouter.conf /etc/nginx/conf.d/pararouter.conf || true
 sudo systemctl daemon-reload
 
-sudo chown -R root:root $PROJECT_DIR
+sudo chown -R $USER:$USER $PROJECT_DIR
 
 # 8.5 Install Cloudflare Tunnel
 if [ -n "$TUNNEL_TOKEN" ]; then

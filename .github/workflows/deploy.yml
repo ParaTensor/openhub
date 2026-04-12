@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      SERVER_IP: "1.13.23.141"
-      SERVER_USER: "root"
+      SERVER_IP: ${{ secrets.TENCENT_HOST_IP }}
+      SERVER_USER: ${{ secrets.TENCENT_HOST_USER }}
       TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
 
     steps:
@@ -19,7 +19,7 @@ jobs:
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh/
-          echo "${{ secrets.DOMESTIC_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.TENCENT_PEM_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
@@ -30,8 +30,8 @@ jobs:
 
       - name: Sync Source to Server
         run: |
-          DEST_DIR="/root/openhub"
-          TMP_DIR="/root/openhub-tmp"
+          DEST_DIR="/home/$SERVER_USER/openhub"
+          TMP_DIR="/home/$SERVER_USER/openhub-tmp"
           
           echo "1. Preparing remote temporary directory and freeing space..."
           ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=120 -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
