@@ -130,8 +130,12 @@ if [ -n "$TUNNEL_TOKEN" ]; then
     echo "Installing Cloudflare Tunnel (cloudflared)..."
     if [ -f "$PROJECT_DIR/cloudflared" ]; then
         sudo mv $PROJECT_DIR/cloudflared /usr/local/bin/
+        sudo chmod +x /usr/local/bin/cloudflared
     fi
-    sudo cloudflared service install $TUNNEL_TOKEN || true
+    sudo cloudflared service uninstall || true
+    sudo rm -rf /etc/cloudflared/cert.pem /etc/cloudflared/config.yml || true
+    sudo cloudflared service install "$TUNNEL_TOKEN" || true
+    sudo systemctl enable cloudflared || true
     sudo systemctl restart cloudflared || true
 else
     echo "No TUNNEL_TOKEN provided, skipping cloudflared setup."
