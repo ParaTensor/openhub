@@ -29,7 +29,7 @@ jobs:
           TMP_DIR="/root/openhub-tmp"
           
           echo "1. Preparing remote temporary directory and freeing space..."
-          ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=120 -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
             rm -rf $TMP_DIR
             yum clean all || apt-get clean || true
             journalctl --vacuum-time=12h || true
@@ -40,7 +40,7 @@ jobs:
           rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'target' -e "ssh -i ~/.ssh/deploy_key" --timeout=120 ./deploy ./package.json ./package-lock.json ./gateway ./hub ./web ./packages $SERVER_USER@$SERVER_IP:$TMP_DIR/
           
           echo "3. Moving files to final destination and building..."
-          ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=120 -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_IP "
             mkdir -p $DEST_DIR
             
             # Wipe old app source folders but CAREFULLY PRESERVE gateway/target for Rust cache
