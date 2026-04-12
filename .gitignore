@@ -6,3 +6,7 @@ gateway/target/
 *.sqlite
 .env
 .env.*
+
+# Ignore binaries and temporary archives
+cloudflared*
+*.zip
