@@ -286,6 +286,8 @@
     "advanced": "高阶选项",
     "cost_channel_key": "服务商账号 / 密钥",
     "model_name": "模型名称",
+    "provider_model_id": "服务商模型别名 (可选)",
+    "placeholder_alias": "留空则使用上方的模型名称",
     "no_matching_models_found": "未找到匹配模型项目。",
     "cost_rate": "采购折扣",
     "sales_rate": "销售折扣",
@@ -447,5 +449,12 @@
   },
   "select": {
     "no_options_found": "拉不到可用清单及过滤内容。"
+  },
+  "footer": {
+    "models": "工作台",
+    "pricing": "定价中心",
+    "privacy": "隐私政策",
+    "terms": "服务协议",
+    "docs": "文档中心"
   }
 }

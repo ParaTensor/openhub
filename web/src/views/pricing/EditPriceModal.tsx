@@ -333,13 +333,13 @@ export default function EditPriceModal({
 
                     <div className="space-y-2 col-span-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                        {t('editpricemodal.provider_model_id', 'Provider Model Alias (Optional)')}
+                        {t('editpricemodal.provider_model_id')}
                       </label>
                       <input
                         type="text"
                         value={providerModelId}
                         onChange={(e) => setProviderModelId(e.target.value)}
-                        placeholder={t('editpricemodal.placeholder_alias', 'Leave empty to use Model Name above')}
+                        placeholder={t('editpricemodal.placeholder_alias')}
                         className="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-950 transition-all text-sm"
                       />
                     </div>
@@ -370,7 +370,7 @@ export default function EditPriceModal({
                   </div>
 
                   {activePriceView === 'sales' && (
-                    <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200 mb-3">
+                    <div className="grid grid-cols-3 gap-2 animate-in fade-in duration-200 mb-3">
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">{t('editpricemodal.input_1m')}</label>
                         <input value={inputPrice} onChange={(e) => setInputPrice(e.target.value)} type="number" min="0" step="0.000001" className="w-full px-3 py-1.5 border rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
@@ -395,7 +395,7 @@ export default function EditPriceModal({
                   )}
 
                   {activePriceView === 'cost' && (
-                    <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200 mb-3">
+                    <div className="grid grid-cols-3 gap-2 animate-in fade-in duration-200 mb-3">
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">{t('editpricemodal.input_1m')}</label>
                         <input value={inputCost} onChange={(e) => setInputCost(e.target.value)} type="number" min="0" step="0.000001" className="w-full px-3 py-1.5 border rounded-lg text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" />

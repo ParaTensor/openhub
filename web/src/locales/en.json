@@ -277,6 +277,8 @@
     "advanced": "Advanced",
     "cost_channel_key": "Provider Account / Key",
     "model_name": "Model Name",
+    "provider_model_id": "Provider Model Alias (Optional)",
+    "placeholder_alias": "Leave empty to use Model Name above",
     "no_matching_models_found": "No matching models found.",
     "cost_rate": "Cost Rate",
     "sales_rate": "Sales Rate",
@@ -438,5 +440,12 @@
   },
   "select": {
     "no_options_found": "No options found."
+  },
+  "footer": {
+    "models": "Models",
+    "pricing": "Pricing",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "docs": "Documentation"
   }
 }
