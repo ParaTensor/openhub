@@ -1,5 +1,5 @@
 import React from 'react';
-import {ExternalLink, ShieldAlert, Plus, Trash2, Edit2, Globe, FileText, X, Cpu, Key} from 'lucide-react';
+import {ExternalLink, ShieldAlert, Plus, Trash2, Edit2, Globe, FileText, X, Cpu, Key, Copy, CheckCircle2} from 'lucide-react';
 import {apiDelete, apiGet, apiPut} from '../lib/api';
 import {localUser} from '../lib/session';
 import {clsx} from 'clsx';
@@ -66,7 +66,7 @@ export default function ProvidersView() {
         label: provider.label || '',
         base_url: provider.base_url || '',
         docs_url: provider.docs_url || '',
-        keys: provider.keys ? provider.keys.map(k => ({ ...k, key: '' })) : [{ label: 'Default', key: '', status: 'active' }], // Don't show keys
+        keys: provider.keys ? provider.keys.map(k => ({ ...k })) : [{ label: 'Default', key: '', status: 'active' }], // Show keys for copy
       });
       setIsEditing(true);
     } else {
@@ -126,7 +126,7 @@ export default function ProvidersView() {
   }
 
   return (
-    <div className="max-w-7xl space-y-8 pb-12">
+    <div className="w-full space-y-8 pb-12">
       {/* Header section with Add Button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -367,17 +367,38 @@ export default function ProvidersView() {
                             <option value="inactive">{t('providers.inactive')}</option>
                           </select>
                         </div>
-                        <input
-                          type="password"
-                          value={k.key}
-                          onChange={(e) => {
-                            const newKeys = [...formData.keys];
-                            newKeys[index].key = e.target.value;
-                            setFormData({...formData, keys: newKeys});
-                          }}
-                          placeholder={isEditing && k.id ? t('providers.placeholder_key_editing') : t('providers.placeholder_key_new')}
-                          className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
-                        />
+                        <div className="relative">
+                          <input
+                            type="password"
+                            value={k.key}
+                            onChange={(e) => {
+                              const newKeys = [...formData.keys];
+                              newKeys[index].key = e.target.value;
+                              setFormData({...formData, keys: newKeys});
+                            }}
+                            placeholder={isEditing && k.id ? t('providers.placeholder_key_editing') : t('providers.placeholder_key_new')}
+                            className={clsx(
+                              "w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono pr-24",
+                              k.key && k.key.length > 0 ? "border-emerald-200 bg-emerald-50/30" : "border-zinc-200"
+                            )}
+                          />
+                          {k.key && k.key.length > 0 && (
+                            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                              <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm pointer-events-none">
+                                <CheckCircle2 size={10} />
+                                已配置
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => navigator.clipboard.writeText(k.key)}
+                                className="text-zinc-400 hover:text-zinc-800 p-1.5 rounded-md hover:bg-zinc-100 transition-colors"
+                                title="复制 API Key"
+                              >
+                                <Copy size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       {formData.keys.length > 1 && (
                         <button
