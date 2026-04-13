@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Search, ArrowUpRight, Zap, SlidersHorizontal} from 'lucide-react';
-import {apiGet, apiPost} from '../lib/api';
+import {apiGet} from '../lib/api';
 import {localUser} from '../lib/session';
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -71,7 +71,10 @@ export default function ModelsView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredModels.length > 0 ? (
           filteredModels.map((model) => (
-            <div key={model.id} className="group bg-white border border-gray-100 rounded-xl p-4 hover:border-zinc-300 transition-all duration-200 flex flex-col">
+            <div
+              key={`${model.id}::${model.provider_account_id ?? ''}`}
+              className="group bg-white border border-gray-100 rounded-xl p-4 hover:border-zinc-300 transition-all duration-200 flex flex-col"
+            >
               {/* ... existing model card content ... */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">

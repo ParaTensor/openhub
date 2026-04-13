@@ -70,7 +70,7 @@ export default function ProviderAccountModal({ isOpen, onClose, onSuccess }: Pro
           </div>
         </div>
         <div className="flex-1 overflow-auto px-5 py-5 space-y-4 text-left">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <div className="rounded-xl border border-purple-100 bg-purple-50 px-4 py-3 text-sm text-purple-700">
             A <strong>{t('provideraccountmodal.provider_account')}</strong> {t('provideraccountmodal.represents_a_single_upstream_a')}</div>
 
           <div className="space-y-1">
@@ -148,7 +148,7 @@ export default function ProviderAccountModal({ isOpen, onClose, onSuccess }: Pro
           <button
             onClick={saveProvider}
             disabled={providerSaving || !newProvider.provider.trim() || !newProvider.key.trim()}
-            className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
           >
             {providerSaving ? 'Saving...' : 'Save Provider Account'}
           </button>

@@ -20,6 +20,9 @@ pub struct PermissiveChatRequest {
     pub top_p: Option<f32>,
     pub max_tokens: Option<u32>,
     pub stream: Option<bool>,
+    /// When set, chat is routed to this provider account for the given logical `model` id.
+    #[serde(default)]
+    pub pararouter_provider_account_id: Option<String>,
 
     // We capture unknown fields but core currently drops them for chat requests
     #[serde(flatten)]
@@ -88,6 +91,8 @@ pub struct PermissiveEmbeddingsRequest {
     pub model: Option<String>,
     pub input: Option<Value>,
     pub encoding_format: Option<String>,
+    #[serde(default)]
+    pub pararouter_provider_account_id: Option<String>,
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }

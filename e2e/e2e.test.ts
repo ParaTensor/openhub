@@ -98,7 +98,6 @@ async function start() {
       body: JSON.stringify({
         name: 'E2E Test Key',
         key: 'sk-pararouter-e2e',
-        uid: 'local-admin' // we bind it to local-admin for simplicity
       })
     });
     if (!keyRes.ok) throw new Error(`Key creation failed: ${await keyRes.text()}`);

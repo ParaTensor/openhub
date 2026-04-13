@@ -165,31 +165,32 @@ router.get('/', async (_req, res) => {
 
     const { rows } = await client.query(
       `WITH latest_published AS (
-         SELECT model_id, provider_account_id, price_mode, input_price, output_price, 
-                cache_read_price, cache_write_price, reasoning_price, markup_rate, 
+         SELECT model_id, provider_account_id, provider_key_id, price_mode, input_price, output_price,
+                cache_read_price, cache_write_price, reasoning_price, markup_rate,
                 is_top_provider, context_length, latency_ms
          FROM model_provider_pricings
          WHERE version = $1 AND status = 'online'
-       ),
-       best_prices AS (
-         SELECT DISTINCT ON (model_id)
-           model_id, provider_account_id, price_mode, input_price, output_price, 
-           cache_read_price, cache_write_price, reasoning_price, markup_rate, 
-           context_length, latency_ms
-         FROM latest_published
-         ORDER BY model_id, is_top_provider DESC, input_price ASC NULLS LAST
        )
-       SELECT 
-         lm.id, lm.name, pa.label as provider_label, lm.description, 
-         COALESCE(bp.context_length, lm.context_length) as context_length,
-         bp.price_mode, bp.markup_rate,
-         bp.input_price, bp.output_price, bp.cache_read_price, bp.cache_write_price, bp.reasoning_price,
-         bp.latency_ms,
+       SELECT
+         lp.model_id as id,
+         lm.name,
+         pa.label as provider_label,
+         pa.id as provider_account_id,
+         lm.description,
+         COALESCE(lp.context_length, lm.context_length) as context_length,
+         lp.price_mode,
+         lp.markup_rate,
+         lp.input_price,
+         lp.output_price,
+         lp.cache_read_price,
+         lp.cache_write_price,
+         lp.reasoning_price,
+         lp.latency_ms,
          lm.global_pricing
-       FROM best_prices bp
-       JOIN llm_models lm ON bp.model_id = lm.id
-       JOIN provider_accounts pa ON bp.provider_account_id = pa.id
-       ORDER BY lm.name ASC`,
+       FROM latest_published lp
+       JOIN llm_models lm ON lp.model_id = lm.id
+       JOIN provider_accounts pa ON lp.provider_account_id = pa.id
+       ORDER BY lm.name ASC, pa.label ASC, lp.provider_key_id ASC`,
       [currentVersion]
     );
 
@@ -209,6 +210,7 @@ router.get('/', async (_req, res) => {
 
       return {
         id: row.id,
+        provider_account_id: row.provider_account_id,
         name: row.name,
         provider: row.provider_label,
         description: row.description || '',

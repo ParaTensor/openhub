@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
+import { Readable } from 'node:stream';
 import { pool } from '../db';
 import { requireRole } from '../middleware/auth';
 import type { Request, Response } from 'express';
@@ -74,27 +75,43 @@ router.post('/completions', async (req: Request, res: Response) => {
         res.setHeader(key, val);
       }
     }
-    
-    if (gatewayRes.body) {
-      if ('pipe' in gatewayRes.body) {
-        // Node compatibility wrapper just in case fetch returned a node stream natively
-        (gatewayRes.body as any).pipe(res);
-      } else {
-        // ReadableStream
-        const reader = gatewayRes.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        
-        while (!done) {
-          const { value, done: isDone } = await reader.read();
-          if (value) {
-            res.write(value);
-          }
-          done = isDone;
-        }
-        res.end();
-      }
+
+    const upstreamCt = gatewayRes.headers.get('content-type') || '';
+    if (upstreamCt.includes('text/event-stream')) {
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+    }
+    res.flushHeaders();
+
+    if (!gatewayRes.body) {
+      res.end();
     } else {
+      const body = gatewayRes.body as ReadableStream<Uint8Array> & NodeJS.ReadableStream;
+      const flushRes = () => {
+        if (typeof (res as any).flush === 'function') {
+          (res as any).flush();
+        }
+      };
+
+      if (typeof body.getReader === 'function') {
+        const reader = body.getReader();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value && value.byteLength) {
+            res.write(Buffer.from(value));
+            flushRes();
+          }
+        }
+      } else {
+        for await (const chunk of Readable.fromWeb(body as any)) {
+          if (chunk.length) {
+            res.write(chunk);
+            flushRes();
+          }
+        }
+      }
       res.end();
     }
   } catch (error: any) {

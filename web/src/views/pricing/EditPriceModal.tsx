@@ -577,14 +577,14 @@ export default function EditPriceModal({
                          {t('editpricemodal.sales_rate')}{sMap}{t('editpricemodal.is_lower_than_cost_rate')}{cMap}{t('editpricemodal.this_configuration_will_genera')}</p>
                     </div>
                   )}
-                  <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 space-y-3">
-                    <p className="text-[10px] font-bold text-blue-800 uppercase tracking-widest">{t('editpricemodal.official_benchmark')}</p>
-                    <div className="space-y-1.5 text-[11px] text-blue-900">
-                      {p.prompt && <div className="flex justify-between"><span className="text-blue-600">{t('editpricemodal.input')}</span><span className="font-mono font-medium">{p.prompt}</span></div>}
-                      {p.completion && <div className="flex justify-between"><span className="text-blue-600">{t('editpricemodal.output')}</span><span className="font-mono font-medium">{p.completion}</span></div>}
-                      {p.cache_read && <div className="flex justify-between"><span className="text-blue-600">{t('editpricemodal.cache_read')}</span><span className="font-mono font-medium">{p.cache_read}</span></div>}
-                      {p.cache_write && <div className="flex justify-between"><span className="text-blue-600">{t('editpricemodal.cache_write')}</span><span className="font-mono font-medium">{p.cache_write}</span></div>}
-                      {p.reasoning && <div className="flex justify-between"><span className="text-blue-600">{t('editpricemodal.reasoning')}</span><span className="font-mono font-medium">{p.reasoning}</span></div>}
+                  <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 space-y-3">
+                    <p className="text-[10px] font-bold text-purple-800 uppercase tracking-widest">{t('editpricemodal.official_benchmark')}</p>
+                    <div className="space-y-1.5 text-[11px] text-purple-900">
+                      {p.prompt && <div className="flex justify-between"><span className="text-purple-600">{t('editpricemodal.input')}</span><span className="font-mono font-medium">{p.prompt}</span></div>}
+                      {p.completion && <div className="flex justify-between"><span className="text-purple-600">{t('editpricemodal.output')}</span><span className="font-mono font-medium">{p.completion}</span></div>}
+                      {p.cache_read && <div className="flex justify-between"><span className="text-purple-600">{t('editpricemodal.cache_read')}</span><span className="font-mono font-medium">{p.cache_read}</span></div>}
+                      {p.cache_write && <div className="flex justify-between"><span className="text-purple-600">{t('editpricemodal.cache_write')}</span><span className="font-mono font-medium">{p.cache_write}</span></div>}
+                      {p.reasoning && <div className="flex justify-between"><span className="text-purple-600">{t('editpricemodal.reasoning')}</span><span className="font-mono font-medium">{p.reasoning}</span></div>}
                     </div>
                   </div>
                 </div>
@@ -602,7 +602,7 @@ export default function EditPriceModal({
           </div>
           <div className="flex items-center gap-3">
             <button onClick={onClose} className="text-[13px] font-bold text-zinc-500 hover:text-zinc-900 px-3">{t('editpricemodal.cancel')}</button>
-            <button onClick={onPublish} disabled={busy || providers.length === 0 || !model.trim()} className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={onPublish} disabled={busy || providers.length === 0 || !model.trim()} className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50">
               {t('editpricemodal.publish')}</button>
           </div>
         </div>

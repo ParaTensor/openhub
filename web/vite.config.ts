@@ -5,7 +5,8 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3034';
+  // Hub 默认端口见 hub/server.ts（PORT||3322）；勿写错端口否则本地 API/流式会异常
+  const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3322';
   return {
     plugins: [react(), tailwindcss()],
     define: {

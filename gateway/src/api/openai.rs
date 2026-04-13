@@ -22,6 +22,12 @@ pub async fn chat_completions(
     State(runtime): State<Arc<ParaRouterRuntime>>,
     Json(permissive_request): Json<PermissiveChatRequest>,
 ) -> Response {
+    let provider_hint = permissive_request
+        .pararouter_provider_account_id
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
     // Stage 1: Protocol Translation
     let mut request = match into_core_chat_request(permissive_request) {
         Ok(r) => r,
@@ -57,7 +63,7 @@ pub async fn chat_completions(
     }
 
     // Stage 2: Routing Lifecycle (find ExecutionTarget)
-    let target = match resolve_model_target(&runtime, &request.model).await {
+    let target = match resolve_model_target(&runtime, &request.model, provider_hint.as_deref()).await {
         Ok(t) => t,
         Err(e) => {
             return (
@@ -98,6 +104,12 @@ pub async fn embeddings(
     State(runtime): State<Arc<ParaRouterRuntime>>,
     Json(permissive_request): Json<PermissiveEmbeddingsRequest>,
 ) -> Response {
+    let provider_hint = permissive_request
+        .pararouter_provider_account_id
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
     let mut request = match into_core_embeddings_request(permissive_request) {
         Ok(r) => r,
         Err(e) => {
@@ -130,7 +142,7 @@ pub async fn embeddings(
         request.metadata.insert("budget_limit".to_string(), budget_limit.to_string());
     }
 
-    let target = match resolve_model_target(&runtime, &request.model).await {
+    let target = match resolve_model_target(&runtime, &request.model, provider_hint.as_deref()).await {
         Ok(t) => t,
         Err(e) => {
             return (

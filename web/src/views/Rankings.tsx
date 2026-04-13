@@ -95,10 +95,10 @@ export default function RankingsView() {
         </div>
         <div className="bg-white border border-zinc-100 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
               <Zap size={20} />
             </div>
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{t('rankings.fastest')}</span>
+            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">{t('rankings.fastest')}</span>
           </div>
           <h3 className="text-sm font-bold text-zinc-500 mb-1">{stats.fastest?.name || '---'}</h3>
           <p className="text-2xl font-black">{stats.fastest?.latency || '---'}</p>

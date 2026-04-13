@@ -3,7 +3,7 @@ import { pool } from '../db';
 import { AuthUser, AuthenticatedRequest } from '../types';
 
 export async function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const publicPaths = new Set(['/health', '/auth/login', '/auth/register/request', '/auth/register/verify', '/models']);
+  const publicPaths = new Set(['/health', '/auth/login', '/auth/register/request', '/auth/register/verify']);
   if (publicPaths.has(req.path) || req.path === '/gateway/usage') {
     return next();
   }

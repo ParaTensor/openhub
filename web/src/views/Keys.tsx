@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from 'react';
-import {Plus, Copy, Trash2, Eye, EyeOff, ShieldCheck, Check, X, Loader2, Search} from 'lucide-react';
+import {Plus, Copy, Trash2, Eye, EyeOff, ShieldCheck, Check, X, Loader2, Search, Pencil} from 'lucide-react';
 import {Dialog, DialogBackdrop, DialogPanel} from '@headlessui/react';
-import {apiDelete, apiGet, apiPost} from '../lib/api';
-import {localUser} from '../lib/session';
+import {apiDelete, apiGet, apiPatch, apiPost} from '../lib/api';
+import {getAuthSession} from '../lib/session';
 import { useTranslation } from "react-i18next";
 
 interface APIKey {
@@ -23,6 +23,8 @@ export default function KeysView() {
   const [loading, setLoading] = useState(true);
   const [showKey, setShowKey] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
   const [newBudgetLimit, setNewBudgetLimit] = useState('');
   const [selectedAllowedModelIds, setSelectedAllowedModelIds] = useState<string[]>([]);
@@ -39,7 +41,7 @@ export default function KeysView() {
 
   const loadKeys = async () => {
     try {
-      const data = await apiGet<APIKey[]>(`/api/user-api-keys?uid=${encodeURIComponent(localUser.uid)}`);
+      const data = await apiGet<APIKey[]>(`/api/user-api-keys`);
       setKeys(data);
     } catch (error) {
       console.error('Failed to load keys:', error);
@@ -57,16 +59,25 @@ export default function KeysView() {
     setNewBudgetLimit('');
     setSelectedAllowedModelIds([]);
     setModelFilter('');
+    setEditingKeyId(null);
+    setModalMode('create');
   };
 
   useEffect(() => {
     if (!isModalOpen) return;
     let cancelled = false;
     setModelsLoading(true);
-    apiGet<{id: string; name: string}[]>('/api/models')
+    apiGet<{id: string; name: string; provider_account_id?: string}[]>('/api/models')
       .then((data) => {
         if (cancelled || !Array.isArray(data)) return;
-        setModelRegistry(data.map((m) => ({id: m.id, name: m.name || m.id})));
+        const seen = new Set<string>();
+        const deduped: {id: string; name: string}[] = [];
+        for (const m of data) {
+          if (!m?.id || seen.has(m.id)) continue;
+          seen.add(m.id);
+          deduped.push({ id: m.id, name: m.name || m.id });
+        }
+        setModelRegistry(deduped);
       })
       .catch(() => {
         if (!cancelled) setModelRegistry([]);
@@ -95,10 +106,11 @@ export default function KeysView() {
     if (!newKeyName.trim()) return;
     try {
       const key = `sk-oh-v1-${Math.random().toString(36).slice(2, 14)}${Math.random().toString(36).slice(2, 14)}`;
+      const uid = getAuthSession()?.user?.uid;
       await apiPost('/api/user-api-keys', {
-        name: newKeyName,
+        name: newKeyName.trim(),
         key,
-        uid: localUser.uid,
+        ...(uid ? {uid} : {}),
         lastUsed: 'Never',
         usage: '$0.00',
         budgetLimit: newBudgetLimit ? parseFloat(newBudgetLimit) : undefined,
@@ -114,12 +126,47 @@ export default function KeysView() {
     }
   };
 
+  const openEditKeyModal = (key: APIKey) => {
+    setModalMode('edit');
+    setEditingKeyId(key.id);
+    setNewKeyName(key.name);
+    setNewBudgetLimit(key.budgetLimit !== undefined ? String(key.budgetLimit) : '');
+    setSelectedAllowedModelIds(key.allowedModels?.length ? [...key.allowedModels] : []);
+    setModelFilter('');
+    setIsModalOpen(true);
+  };
+
+  const handleUpdateKey = async () => {
+    if (!editingKeyId || !newKeyName.trim()) return;
+    try {
+      const budgetLimit =
+        newBudgetLimit.trim() === ''
+          ? null
+          : (() => {
+              const n = parseFloat(newBudgetLimit);
+              return Number.isFinite(n) ? n : null;
+            })();
+      await apiPatch(`/api/user-api-keys/${editingKeyId}`, {
+        name: newKeyName.trim(),
+        budgetLimit,
+        allowedModels: selectedAllowedModelIds,
+      });
+      resetCreateKeyModal();
+      setIsModalOpen(false);
+      await loadKeys();
+      showNotification(t('keys.update_success'), 'success');
+    } catch (error: any) {
+      console.error('Failed to update key:', error);
+      showNotification(error?.message || t('keys.update_failed'), 'error');
+    }
+  };
+
   const handleDeleteKey = async (id: string) => {
     if (!window.confirm(t('keys.delete_confirm'))) return;
     try {
       await apiDelete(`/api/user-api-keys/${id}`);
       await loadKeys();
-      showNotification(t('keys.delete_success', 'Key deleted successfully'), 'success');
+      showNotification(t('keys.delete_success'), 'success');
     } catch (error: any) {
       console.error('Failed to delete key:', error);
       showNotification(error?.message || t('keys.delete_failed'), 'error');
@@ -165,6 +212,7 @@ export default function KeysView() {
           type="button"
           onClick={() => {
             resetCreateKeyModal();
+            setModalMode('create');
             setIsModalOpen(true);
           }}
           className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-all active:scale-95"
@@ -181,14 +229,15 @@ export default function KeysView() {
 
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full table-fixed text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-50">
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.name')}</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.key')}</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.usage')}</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.created')}</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">{t('keys.actions')}</th>
+                <th className="w-[18%] px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.name')}</th>
+                <th className="w-[38%] px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.key')}</th>
+                <th className="w-[12%] px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.usage')}</th>
+                <th className="w-[12%] px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.models_access')}</th>
+                <th className="w-[12%] px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('keys.created')}</th>
+                <th className="w-[14%] px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">{t('keys.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -197,12 +246,15 @@ export default function KeysView() {
                   <td className="px-6 py-4">
                     <span className="font-semibold text-gray-900">{key.name}</span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100 w-fit">
-                      {showKey === key.id ? key.key : 'sk-oh-v1-••••••••••••'}
+                  <td className="px-6 py-4 min-w-0 align-middle">
+                    <div className="flex min-w-0 max-w-full items-center gap-2 rounded border border-gray-100 bg-gray-50 px-2 py-1 font-mono text-xs text-gray-500">
+                      <span className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap [scrollbar-width:thin]">
+                        {showKey === key.id ? key.key : 'sk-oh-v1-••••••••••••'}
+                      </span>
                       <button
+                        type="button"
                         onClick={() => setShowKey(showKey === key.id ? null : key.id)}
-                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        className="shrink-0 rounded p-1 transition-colors hover:bg-gray-200"
                       >
                         {showKey === key.id ? <EyeOff size={12} /> : <Eye size={12} />}
                       </button>
@@ -212,16 +264,33 @@ export default function KeysView() {
                     <span className="text-sm font-medium text-zinc-600">{key.usage}</span>
                     {key.budgetLimit !== undefined && <span className="text-xs text-zinc-400 ml-1">/ ${key.budgetLimit.toFixed(2)}</span>}
                   </td>
+                  <td className="px-6 py-4 text-sm text-zinc-600">
+                    {!key.allowedModels?.length ? (
+                      <span className="text-zinc-400">{t('keys.models_access_all')}</span>
+                    ) : (
+                      <span title={key.allowedModels.join(', ')}>{t('keys.models_access_count', {count: key.allowedModels.length})}</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{new Date(key.createdAt).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        type="button"
+                        onClick={() => openEditKeyModal(key)}
+                        className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
+                        title={t('keys.edit_key')}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => copyToClipboard(key.key, key.id)}
                         className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
                       >
                         {copiedId === key.id ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeleteKey(key.id)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       >
@@ -233,7 +302,7 @@ export default function KeysView() {
               ))}
               {keys.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-400 text-sm">
+                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-400 text-sm">
                     {t('keys.no_api_keys_found_create_one_t')}</td>
                 </tr>
               )}
@@ -255,8 +324,12 @@ export default function KeysView() {
           <DialogPanel className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[min(90vh,720px)] overflow-hidden text-left ring-1 ring-black/[0.04]">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
               <div>
-                <h3 className="font-bold text-lg">{t('keys.create_api_key')}</h3>
-                <p className="text-xs text-zinc-500 mt-0.5">{t('keys.modal_subtitle')}</p>
+                <h3 className="font-bold text-lg">
+                  {modalMode === 'create' ? t('keys.create_api_key') : t('keys.edit_key')}
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {modalMode === 'create' ? t('keys.modal_subtitle') : t('keys.edit_subtitle')}
+                </p>
               </div>
             </div>
             <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
@@ -268,8 +341,10 @@ export default function KeysView() {
                   placeholder={t('keys.placeholder_key_name')}
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateKey()}
-                  className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' && (modalMode === 'create' ? handleCreateKey() : handleUpdateKey())
+                  }
+                  className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 />
               </div>
               <p className="text-xs text-zinc-500 leading-relaxed -mt-1">{t('keys.give_your_key_a_descriptive_na')}</p>
@@ -281,7 +356,7 @@ export default function KeysView() {
                   placeholder={t('keys.placeholder_budget')}
                   value={newBudgetLimit}
                   onChange={(e) => setNewBudgetLimit(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 />
               </div>
               <div className="space-y-2 pt-1">
@@ -291,7 +366,7 @@ export default function KeysView() {
                     <p className="text-[11px] text-zinc-500 mt-1.5 leading-relaxed max-w-prose">{t('customers.allowed_models_hint')}</p>
                   </div>
                   {selectedAllowedModelIds.length > 0 && (
-                    <span className="text-[10px] font-bold tracking-wide text-blue-800 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md whitespace-nowrap">
+                    <span className="text-[10px] font-bold tracking-wide text-purple-800 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-md whitespace-nowrap">
                       {t('customers.models_selected_count', {count: selectedAllowedModelIds.length})}
                     </span>
                   )}
@@ -306,7 +381,7 @@ export default function KeysView() {
                     {t('customers.models_empty')}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/25 focus-within:border-blue-400 transition-all">
+                  <div className="rounded-xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-purple-500/25 focus-within:border-purple-400 transition-all">
                     <div className="relative border-b border-zinc-100 bg-zinc-50/30">
                       <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                       <input
@@ -328,14 +403,14 @@ export default function KeysView() {
                               <li key={m.id}>
                                 <label
                                   className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer text-left border border-transparent transition-colors ${
-                                    checked ? 'bg-blue-50/60 border-blue-100/80' : 'hover:bg-zinc-50'
+                                    checked ? 'bg-purple-50/60 border-purple-100/80' : 'hover:bg-zinc-50'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
                                     checked={checked}
                                     onChange={() => toggleAllowedModel(m.id)}
-                                    className="mt-1 size-4 shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/30"
+                                    className="mt-1 size-4 shrink-0 rounded border-zinc-300 text-purple-600 focus:ring-purple-500/30"
                                   />
                                   <span className="min-w-0 flex-1">
                                     <span className="block text-sm font-medium text-zinc-900 leading-snug">{m.name}</span>
@@ -365,11 +440,11 @@ export default function KeysView() {
               </button>
               <button
                 type="button"
-                onClick={handleCreateKey}
+                onClick={modalMode === 'create' ? handleCreateKey : handleUpdateKey}
                 disabled={!newKeyName.trim()}
                 className="bg-black text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-zinc-800 disabled:opacity-50 flex items-center gap-2 transition-all"
               >
-                {t('keys.create_key')}
+                {modalMode === 'create' ? t('keys.create_key') : t('keys.save')}
               </button>
             </div>
           </DialogPanel>

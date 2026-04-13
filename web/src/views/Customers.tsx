@@ -447,7 +447,7 @@ export default function CustomersView() {
                             placeholder={t('customers.placeholder_username')}
                             value={newUsername}
                             onChange={(e) => setNewUsername(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                           />
                         </div>
                         <div className="space-y-2">
@@ -457,7 +457,7 @@ export default function CustomersView() {
                             placeholder={t('customers.placeholder_email')}
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                           />
                         </div>
                         <div className="space-y-2">
@@ -467,7 +467,7 @@ export default function CustomersView() {
                             placeholder={t('customers.placeholder_password')}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                           />
                         </div>
                         <div className="space-y-2">
@@ -477,7 +477,7 @@ export default function CustomersView() {
                             placeholder={t('customers.placeholder_balance')}
                             value={newBalance}
                             onChange={(e) => setNewBalance(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                           />
                         </div>
                       </div>
@@ -492,7 +492,7 @@ export default function CustomersView() {
                             <p className="text-[11px] text-zinc-500 mt-1.5 leading-relaxed max-w-prose">{t('customers.allowed_models_hint')}</p>
                           </div>
                           {selectedAllowedModelIds.length > 0 && (
-                            <span className="text-[10px] font-bold tracking-wide text-blue-800 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md whitespace-nowrap">
+                            <span className="text-[10px] font-bold tracking-wide text-purple-800 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-md whitespace-nowrap">
                               {t('customers.models_selected_count', {count: selectedAllowedModelIds.length})}
                             </span>
                           )}
@@ -507,7 +507,7 @@ export default function CustomersView() {
                             {t('customers.models_empty')}
                           </div>
                         ) : (
-                          <div className="rounded-xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/25 focus-within:border-blue-400 transition-all">
+                          <div className="rounded-xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-purple-500/25 focus-within:border-purple-400 transition-all">
                             <div className="relative border-b border-zinc-100 bg-zinc-50/30">
                               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                               <input
@@ -529,14 +529,14 @@ export default function CustomersView() {
                                       <li key={m.id}>
                                         <label
                                           className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer text-left border border-transparent transition-colors ${
-                                            checked ? 'bg-blue-50/60 border-blue-100/80' : 'hover:bg-zinc-50'
+                                            checked ? 'bg-purple-50/60 border-purple-100/80' : 'hover:bg-zinc-50'
                                           }`}
                                         >
                                           <input
                                             type="checkbox"
                                             checked={checked}
                                             onChange={() => toggleAllowedModel(m.id)}
-                                            className="mt-1 size-4 shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/30"
+                                            className="mt-1 size-4 shrink-0 rounded border-zinc-300 text-purple-600 focus:ring-purple-500/30"
                                           />
                                           <span className="min-w-0 flex-1">
                                             <span className="block text-sm font-medium text-zinc-900 leading-snug">{m.name}</span>
@@ -611,7 +611,7 @@ export default function CustomersView() {
                   <div className="border-t px-6 py-4 bg-zinc-50/80 flex justify-end shrink-0">
                     <button
                       onClick={handleCloseCreate}
-                      className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 transition-all"
+                      className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 transition-all"
                     >
                       {t('customers.done')}
                     </button>
@@ -652,7 +652,7 @@ export default function CustomersView() {
                       type="text"
                       value={editUsername}
                       onChange={(e) => setEditUsername(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -661,7 +661,7 @@ export default function CustomersView() {
                       type="email"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -672,7 +672,7 @@ export default function CustomersView() {
                       step="0.01"
                       value={editBalance}
                       onChange={(e) => setEditBalance(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -680,7 +680,7 @@ export default function CustomersView() {
                     <select
                       value={editStatus}
                       onChange={(e) => setEditStatus(e.target.value as 'active' | 'inactive')}
-                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                     >
                       <option value="active">{t('customers.active')}</option>
                       <option value="inactive" disabled={editCustomer != null && localUser.uid === editCustomer.id}>
@@ -695,7 +695,7 @@ export default function CustomersView() {
                       placeholder={t('customers.placeholder_new_password')}
                       value={editNewPassword}
                       onChange={(e) => setEditNewPassword(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                     />
                   </div>
                 </div>
@@ -710,7 +710,7 @@ export default function CustomersView() {
                       <p className="text-[11px] text-zinc-500 mt-1.5 leading-relaxed max-w-prose">{t('customers.allowed_models_hint')}</p>
                     </div>
                     {editAllowedModelIds.length > 0 && (
-                      <span className="text-[10px] font-bold tracking-wide text-blue-800 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md whitespace-nowrap">
+                      <span className="text-[10px] font-bold tracking-wide text-purple-800 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-md whitespace-nowrap">
                         {t('customers.models_selected_count', {count: editAllowedModelIds.length})}
                       </span>
                     )}
@@ -725,7 +725,7 @@ export default function CustomersView() {
                       {t('customers.models_empty')}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/25 focus-within:border-blue-400 transition-all">
+                    <div className="rounded-xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-purple-500/25 focus-within:border-purple-400 transition-all">
                       <div className="relative border-b border-zinc-100 bg-zinc-50/30">
                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                         <input
@@ -747,14 +747,14 @@ export default function CustomersView() {
                                 <li key={m.id}>
                                   <label
                                     className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer text-left border border-transparent transition-colors ${
-                                      checked ? 'bg-blue-50/60 border-blue-100/80' : 'hover:bg-zinc-50'
+                                      checked ? 'bg-purple-50/60 border-purple-100/80' : 'hover:bg-zinc-50'
                                     }`}
                                   >
                                     <input
                                       type="checkbox"
                                       checked={checked}
                                       onChange={() => toggleEditAllowedModel(m.id)}
-                                      className="mt-1 size-4 shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/30"
+                                      className="mt-1 size-4 shrink-0 rounded border-zinc-300 text-purple-600 focus:ring-purple-500/30"
                                     />
                                     <span className="min-w-0 flex-1">
                                       <span className="block text-sm font-medium text-zinc-900 leading-snug">{m.name}</span>

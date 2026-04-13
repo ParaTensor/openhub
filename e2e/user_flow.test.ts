@@ -88,7 +88,6 @@ async function startUserFlow() {
       body: JSON.stringify({
         name: 'My Test Key',
         key: apiKeyRaw,
-        uid: uid
       })
     });
     if (!keyRes.ok) throw new Error(`Key creation failed: ${await keyRes.text()}`);

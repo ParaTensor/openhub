@@ -158,7 +158,7 @@ export default function GlobalModelsView() {
                   placeholder={t('globalmodels.placeholder_url')} 
                   value={syncUrl}
                   onChange={e => setSyncUrl(e.target.value)}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-2.5 text-sm focus:outline-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-2.5 text-sm focus:outline-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
                   autoFocus
                 />
               </div>
@@ -170,7 +170,7 @@ export default function GlobalModelsView() {
               <button 
                 onClick={handleRemoteSync}
                 disabled={syncing}
-                className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {syncing ? <RefreshCw size={16} className="animate-spin" /> : null}
                 {syncing ? 'Syncing...' : 'Start Sync'}
@@ -200,7 +200,7 @@ export default function GlobalModelsView() {
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">{t('globalmodels.display_name')}</label>
                   <input 
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-blue-500 transition-all font-medium" 
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-purple-500 transition-all font-medium" 
                     value={editForm.name} 
                     onChange={e => setEditForm({...editForm, name: e.target.value})} 
                   />
@@ -274,7 +274,7 @@ export default function GlobalModelsView() {
               </button>
               <button 
                 onClick={handleSave}
-                className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {t('globalmodels.save_changes')}
               </button>
@@ -336,7 +336,7 @@ export default function GlobalModelsView() {
                   <td className="px-3 py-3 text-right">
                     <button 
                       onClick={() => handleEdit(m)} 
-                      className="text-zinc-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all"
+                      className="text-zinc-400 hover:text-purple-600 hover:bg-purple-50 p-2 rounded-lg transition-all"
                       title="Edit Model Metadata"
                     >
                       <Edit2 size={16} />

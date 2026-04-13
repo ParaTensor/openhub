@@ -1,0 +1,48 @@
+{
+  "navbar": {
+    "pararouter": "ParaRouter"
+  },
+  "landing": {
+    "nav_models": "모델",
+    "nav_login": "로그인",
+    "nav_get_key": "API 키 받기",
+    "hero_title": "LLM 워크로드를 위한 통합 게이트웨이",
+    "hero_desc_start": "더 나은 ",
+    "hero_kw_price": "가격",
+    "hero_desc_mid": ", 더 빠른 ",
+    "hero_kw_speed": "응답",
+    "hero_desc_end": ", 복원력 있는 라우팅. OpenAI 호환 API, 사용량 기반 과금, 몇 분 안에 시작하세요.",
+    "cta_key": "API 키 받기",
+    "cta_models": "모델 둘러보기",
+    "hero_card_title": "OpenAI 호환 엔드포인트",
+    "hero_card_sub": "SDK의 베이스 URL만 바꾸면 됩니다. 요청 형식은 그대로 유지됩니다.",
+    "stat1_val": "50+",
+    "stat1_label": "모델 및 변형",
+    "stat2_val": "다중 경로",
+    "stat2_label": "자동 페일오버",
+    "stat3_val": "저지연",
+    "stat3_label": "라우팅 및 스케줄링",
+    "stat4_val": "사용량 기반",
+    "stat4_label": "투명한 미터링",
+    "explorer_title": "모델 카탈로그",
+    "explorer_subtitle": "공급자, 토큰 단가, 지연 등 전체 표는 로그인 후에 제공됩니다.",
+    "models_locked_desc": "라우팅 및 상업적 세부 정보의 대량 수집을 줄이기 위해 인증된 사용자에게만 공개합니다.",
+    "models_locked_cta": "로그인 후 모델 보기",
+    "models_loading": "모델을 불러오는 중…",
+    "models_empty": "게시된 모델이 아직 없습니다.",
+    "models_error": "모델을 불러오지 못했습니다. 나중에 다시 시도해 주세요.",
+    "col_model": "모델",
+    "col_provider": "공급자",
+    "col_context": "컨텍스트",
+    "col_prompt": "입력 / 100만 토큰",
+    "col_completion": "출력 / 100만 토큰",
+    "col_latency": "지연",
+    "bottom_title": "연결할 준비가 되셨나요?",
+    "bottom_desc": "로그인하거나 가입해 키를 발급받고, SDK의 베이스 URL을 설정한 뒤 모델을 호출하세요.",
+    "lang_menu_button_aria": "언어 메뉴, 현재: {{current}}",
+    "lang_list_aria": "표시 언어 선택"
+  },
+  "models": {
+    "placeholder_search": "모델 검색..."
+  }
+}

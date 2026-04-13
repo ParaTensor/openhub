@@ -1,15 +1,23 @@
 import React from 'react';
-import {LogIn, UserPlus, MailCheck, Globe} from 'lucide-react';
-import {useNavigate} from 'react-router-dom';
+import {LogIn, UserPlus, MailCheck} from 'lucide-react';
+import LocaleSwitcher from '../components/LocaleSwitcher';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {ApiError, apiPost} from '../lib/api';
 import {setAuthSession, type AuthSession} from '../lib/session';
 import { useTranslation } from "react-i18next";
 
 type Mode = 'login' | 'register';
 
+function safePostLoginPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/login')) return '/models';
+  return raw;
+}
+
 export default function Login() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const postLoginPath = React.useMemo(() => safePostLoginPath(searchParams.get('next')), [searchParams]);
   const [mode, setMode] = React.useState<Mode>('login');
   const [busy, setBusy] = React.useState(false);
   const [message, setMessage] = React.useState<string>('');
@@ -68,7 +76,7 @@ export default function Login() {
         }
       }
       setAuthSession(session);
-      navigate('/models');
+      navigate(postLoginPath);
     } catch (err) {
       handleError(err);
     } finally {
@@ -125,59 +133,76 @@ export default function Login() {
     }
   };
 
+  const inputClass =
+    'w-full px-4 py-3 text-sm border border-zinc-200 rounded-xl bg-white text-zinc-900 placeholder:text-zinc-400 outline-none transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500/15';
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fafafa] p-4 relative">
-      <div className="absolute top-6 right-6">
-        <button
-          onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'zh' : 'en')}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-600 bg-white border border-gray-200 rounded-full shadow-sm hover:text-zinc-900 hover:bg-gray-50 transition-colors"
-        >
-          <Globe size={16} />
-          {i18n.language === 'en' ? '中文' : 'English'}
-        </button>
+    <div className="relative flex min-h-screen items-center justify-center bg-neutral-100 p-4">
+      <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+        <LocaleSwitcher className="shadow-sm" />
       </div>
 
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 space-y-6">
+      <div className="w-full max-w-md space-y-8 rounded-3xl border border-zinc-100 bg-white p-8 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.12)] sm:p-10">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center shadow-lg">
-            <div className="w-8 h-8 bg-white rounded-md rotate-45" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600 shadow-md">
+            <div className="h-6 w-6 rotate-45 rounded-sm bg-white" />
           </div>
         </div>
 
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{t('login.welcome_to_pararouter')}</h1>
-          <p className="text-zinc-500">{mode === 'login' ? t('login.sign_in_to_continue') : t('login.create_your_account_with_email_verification')}</p>
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-black">{t('login.welcome_to_pararouter')}</h1>
+          <p className="text-sm text-zinc-500 sm:text-base">
+            {mode === 'login' ? t('login.sign_in_to_continue') : t('login.create_your_account_with_email_verification')}
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 rounded-xl bg-zinc-100 p-1 text-sm font-semibold">
-          <button className={`rounded-lg px-3 py-2 ${mode === 'login' ? 'bg-white shadow-sm' : 'text-zinc-500'}`} onClick={() => setMode('login')}>{t('login.login')}</button>
-          <button className={`rounded-lg px-3 py-2 ${mode === 'register' ? 'bg-white shadow-sm' : 'text-zinc-500'}`} onClick={() => setMode('register')}>{t('login.register')}</button>
+        <div className="grid grid-cols-2 rounded-full bg-zinc-100 p-1 text-sm font-semibold">
+          <button
+            type="button"
+            className={`rounded-full px-3 py-2.5 transition-all ${mode === 'login' ? 'bg-white text-black shadow-sm' : 'text-zinc-500'}`}
+            onClick={() => setMode('login')}
+          >
+            {t('login.login')}
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-3 py-2.5 transition-all ${mode === 'register' ? 'bg-white text-black shadow-sm' : 'text-zinc-500'}`}
+            onClick={() => setMode('register')}
+          >
+            {t('login.register')}
+          </button>
         </div>
 
         {mode === 'login' ? (
-          <div className="space-y-3">
-            <input value={account} onChange={(e) => setAccount(e.target.value)} placeholder={t('login.placeholder_username_or_email')} className="w-full px-4 py-3 border rounded-xl" />
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder={t('login.placeholder_login_password')} className="w-full px-4 py-3 border rounded-xl" />
-            <button onClick={handleLogin} disabled={busy} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-bold disabled:opacity-60">
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleLogin();
+            }}
+          >
+            <input value={account} onChange={(e) => setAccount(e.target.value)} placeholder={t('login.placeholder_username_or_email')} className={inputClass} autoComplete="username" />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder={t('login.placeholder_login_password')} className={inputClass} autoComplete="current-password" />
+            <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-purple-600 px-6 py-3.5 font-semibold text-white shadow-sm transition-colors hover:bg-purple-500 disabled:opacity-60">
               <LogIn size={18} />
               {busy ? t('login.signing_in') : t('login.sign_in')}
             </button>
-          </div>
+          </form>
         ) : (
           <div className="space-y-3">
-            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t('login.placeholder_username')} className="w-full px-4 py-3 border rounded-xl" />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t('login.placeholder_email')} className="w-full px-4 py-3 border rounded-xl" />
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t('login.placeholder_display_name')} className="w-full px-4 py-3 border rounded-xl" />
-            <input value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} type="password" placeholder={t('login.placeholder_password')} className="w-full px-4 py-3 border rounded-xl" />
+            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t('login.placeholder_username')} className={inputClass} autoComplete="username" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t('login.placeholder_email')} className={inputClass} autoComplete="email" />
+            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t('login.placeholder_display_name')} className={inputClass} autoComplete="name" />
+            <input value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} type="password" placeholder={t('login.placeholder_password')} className={inputClass} autoComplete="new-password" />
             {!verificationSent ? (
-              <button onClick={handleRequestCode} disabled={busy} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-bold disabled:opacity-60">
+              <button type="button" onClick={handleRequestCode} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-purple-600 px-6 py-3.5 font-semibold text-white shadow-sm transition-colors hover:bg-purple-500 disabled:opacity-60">
                 <MailCheck size={18} />
                 {busy ? t('login.sending_code') : t('login.send_verification_code')}
               </button>
             ) : (
               <>
-                <input value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} placeholder={t('login.placeholder_verification_code')} className="w-full px-4 py-3 border rounded-xl" />
-                <button onClick={handleVerifyAndRegister} disabled={busy} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-bold disabled:opacity-60">
+                <input value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} placeholder={t('login.placeholder_verification_code')} className={inputClass} autoComplete="one-time-code" />
+                <button type="button" onClick={handleVerifyAndRegister} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-purple-600 px-6 py-3.5 font-semibold text-white shadow-sm transition-colors hover:bg-purple-500 disabled:opacity-60">
                   <UserPlus size={18} />
                   {busy ? t('login.creating_account') : t('login.verify_and_create_account')}
                 </button>

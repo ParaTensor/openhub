@@ -11,6 +11,7 @@ import ProvidersView from './views/Providers';
 import ModelProvidersView from './views/ModelProviders';
 import GlobalModelsView from './views/GlobalModels';
 import LoginView from './views/Login';
+import LandingView from './views/Landing';
 import CustomersView from './views/Customers';
 import {motion} from 'motion/react';
 import {Link, Navigate, Route, Routes, useLocation} from 'react-router-dom';
@@ -30,11 +31,12 @@ export default function App() {
 
   const authed = isAuthenticated();
   const isLoginRoute = location.pathname === '/login';
+  const isLandingRoute = location.pathname === '/';
   const isChatRoute = location.pathname.startsWith('/chat');
   const showShell = authed && !isLoginRoute;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafa] text-black font-sans selection:bg-black selection:text-white">
+    <div className="flex min-h-screen flex-col bg-neutral-100 font-sans text-black selection:bg-purple-600 selection:text-white">
       {showShell && <Navbar />}
 
       <main className="flex-1 flex flex-col min-w-0">
@@ -44,7 +46,9 @@ export default function App() {
               ? 'max-w-[1600px] w-full min-w-0 mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 overflow-x-hidden'
               : isChatRoute
                 ? 'flex-1 flex flex-col h-full min-w-0'
-                : ''
+                : isLandingRoute && !authed
+                  ? 'flex-1 flex flex-col min-w-0'
+                  : ''
           }
         >
           <motion.div
@@ -56,7 +60,7 @@ export default function App() {
           >
             <Routes location={location}>
               <Route path="/login" element={authed ? <Navigate to="/models" replace /> : <LoginView />} />
-              <Route path="/" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
+              <Route path="/" element={authed ? <Navigate to="/models" replace /> : <LandingView />} />
               <Route path="/models" element={authed ? <ModelsView /> : <Navigate to="/login" replace />} />
               <Route path="/insights" element={authed ? <InsightsView /> : <Navigate to="/login" replace />} />
               <Route

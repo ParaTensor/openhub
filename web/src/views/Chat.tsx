@@ -22,12 +22,18 @@ interface ChatSession {
   messages: Message[];
 }
 
+function modelRouteKey(m: { id: string; provider_account_id?: string }) {
+  const pid = m.provider_account_id ?? '';
+  return `${m.id}::${pid}`;
+}
+
 export default function ChatView() {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
   
   const [models, setModels] = useState<any[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  /** Stable key: logical model id + provider account (same id can appear for multiple providers). */
+  const [selectedRouteKey, setSelectedRouteKey] = useState<string>('');
   
   // Load models from API
   useEffect(() => {
@@ -35,14 +41,16 @@ export default function ChatView() {
       .then(res => {
         if (Array.isArray(res) && res.length > 0) {
           setModels(res);
-          setSelectedModel(res[0].id);
+          setSelectedRouteKey(modelRouteKey(res[0]));
         } else {
           setModels([]);
+          setSelectedRouteKey('');
         }
       })
       .catch(err => {
         console.error("Failed to load models", err);
         setModels([]);
+        setSelectedRouteKey('');
       });
   }, []);
 
@@ -53,7 +61,7 @@ export default function ChatView() {
     return acc;
   }, {} as Record<string, any[]>);
 
-  const selectedModelInfo = models.find(m => m.id === selectedModel);
+  const selectedModelInfo = models.find(m => modelRouteKey(m) === selectedRouteKey);
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     const saved = localStorage.getItem('chat_sessions');
     if (saved) {
@@ -158,7 +166,7 @@ export default function ChatView() {
       role: 'assistant',
       content: '',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      model: selectedModelInfo?.name || selectedModel
+      model: selectedModelInfo?.name || selectedModelInfo?.id || ''
     };
 
     let currentMessages = [...newMessages, initAssistantMsg];
@@ -169,11 +177,18 @@ export default function ChatView() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
       
-      const payload = {
-        model: selectedModel,
+      const logicalModelId = selectedModelInfo?.id;
+      const providerAccountId = selectedModelInfo?.provider_account_id;
+      if (!logicalModelId) throw new Error('No model selected');
+
+      const payload: Record<string, unknown> = {
+        model: logicalModelId,
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         stream: true
       };
+      if (providerAccountId) {
+        payload.pararouter_provider_account_id = providerAccountId;
+      }
 
       const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || '';
       
@@ -195,29 +210,50 @@ export default function ChatView() {
       
       let assistantContent = '';
       let done = false;
+      let sseCarry = '';
+
+      const deltaFromChoice = (data: any): string => {
+        const delta = data?.choices?.[0]?.delta;
+        if (!delta) return '';
+        const c = delta.content;
+        if (typeof c === 'string') return c;
+        if (Array.isArray(c)) {
+          return c
+            .map((p: any) => (typeof p?.text === 'string' ? p.text : ''))
+            .join('');
+        }
+        return '';
+      };
       
       while (!done) {
         const { value, done: isDone } = await reader.read();
         done = isDone;
         if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-              try {
-                const data = JSON.parse(line.slice(6));
-                const delta = data.choices?.[0]?.delta?.content || '';
-                if (delta) {
-                  assistantContent += delta;
-                  currentMessages = currentMessages.map(m => 
-                    m.id === assistantMsgId ? { ...m, content: assistantContent } : m
-                  );
-                  updateSession(sessionId, currentMessages);
-                }
-              } catch (e) {
-                console.warn("Failed to parse SSE line", line);
+          sseCarry += decoder.decode(value, { stream: true });
+          const lines = sseCarry.split('\n');
+          sseCarry = lines.pop() ?? '';
+          let chunkChanged = false;
+          for (let raw of lines) {
+            raw = raw.replace(/\r$/, '');
+            if (!raw.startsWith('data: ') || raw === 'data: [DONE]') continue;
+            const payload = raw.slice(6).trim();
+            if (payload === '[DONE]') continue;
+            try {
+              const data = JSON.parse(payload);
+              const delta = deltaFromChoice(data);
+              if (delta) {
+                assistantContent += delta;
+                chunkChanged = true;
               }
+            } catch (e) {
+              console.warn('Failed to parse SSE line', raw);
             }
+          }
+          if (chunkChanged) {
+            currentMessages = currentMessages.map(m =>
+              m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+            );
+            updateSession(sessionId, currentMessages);
           }
         }
       }
@@ -326,9 +362,18 @@ export default function ChatView() {
           </div>
           <div className="flex items-center gap-4">
             <div className="relative group/model">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-full text-xs font-bold hover:border-black transition-all shadow-sm">
-                <Zap size={14} className="text-yellow-500" />
-                {selectedModelInfo?.name || selectedModel || 'Loading Models...'}
+              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-full text-xs font-bold hover:border-black transition-all shadow-sm max-w-[min(100vw-8rem,20rem)]">
+                <Zap size={14} className="text-yellow-500 shrink-0" />
+                <span className="min-w-0 flex flex-col items-start text-left leading-tight">
+                  {selectedModelInfo?.provider ? (
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider truncate w-full">
+                      {selectedModelInfo.provider}
+                    </span>
+                  ) : null}
+                  <span className="truncate w-full font-bold">
+                    {selectedModelInfo?.name || selectedModelInfo?.id || 'Loading Models...'}
+                  </span>
+                </span>
               </button>
               <div className="absolute right-0 mt-2 w-72 bg-white border border-zinc-100 rounded-xl shadow-xl opacity-0 invisible group-hover/model:opacity-100 group-hover/model:visible transition-all py-2 z-50 max-h-96 overflow-y-auto">
                 {Object.entries(groupedModels).map(([provider, pModels]) => (
@@ -337,19 +382,21 @@ export default function ChatView() {
                       {provider}
                       <span className="font-normal opacity-50">{pModels.length}</span>
                     </div>
-                    {pModels.map(m => (
+                    {pModels.map(m => {
+                      const rk = modelRouteKey(m);
+                      return (
                       <button 
-                        key={m.id}
-                        onClick={() => setSelectedModel(m.id)}
+                        key={rk}
+                        onClick={() => setSelectedRouteKey(rk)}
                         className={cn(
                           "w-full text-left px-4 py-2 text-xs transition-colors hover:bg-zinc-50 flex flex-col group",
-                          selectedModel === m.id ? "bg-emerald-50/50" : ""
+                          selectedRouteKey === rk ? "bg-emerald-50/50" : ""
                         )}
                       >
-                        <span className={cn("font-bold transition-colors group-hover:text-black", selectedModel === m.id ? "text-emerald-700" : "text-zinc-700")}>{m.name || m.id}</span>
+                        <span className={cn("font-bold transition-colors group-hover:text-black", selectedRouteKey === rk ? "text-emerald-700" : "text-zinc-700")}>{m.name || m.id}</span>
                         <span className="text-[10px] text-zinc-400 mt-0.5">{m.id}</span>
                       </button>
-                    ))}
+                    );})}
                   </div>
                 ))}
                 {models.length === 0 && (
@@ -421,7 +468,7 @@ export default function ChatView() {
                   handleSend();
                 }
               }}
-              placeholder={t('chat.placeholder_message', { model: selectedModel })}
+              placeholder={t('chat.placeholder_message', { model: selectedModelInfo?.id || '' })}
               className="flex-1 w-full bg-transparent text-[15px] leading-[24px] focus:outline-none resize-none pt-[8px] pb-[8px] max-h-[200px]"
               rows={1}
               style={{ height: '40px' }}
@@ -429,7 +476,7 @@ export default function ChatView() {
             />
             <button 
               onClick={handleSend}
-              disabled={!input.trim() || isSessionStreaming(activeSessionId) || !selectedModel}
+              disabled={!input.trim() || isSessionStreaming(activeSessionId) || !selectedRouteKey}
               className="shrink-0 ml-3 mb-[3px] w-[34px] h-[34px] flex items-center justify-center bg-black text-white rounded-full hover:bg-zinc-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-md shadow-black/5 active:scale-95"
             >
               {isSessionStreaming(activeSessionId) ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} className="mr-[1px]" />}

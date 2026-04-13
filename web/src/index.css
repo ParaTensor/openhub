@@ -3,11 +3,18 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* ParaRouter UI: white canvas + purple accent (see docs/ui-guidelines.md section 5) */
   --color-border: #e5e7eb;
   --color-background: #ffffff;
   --color-foreground: #09090b;
-  --color-muted: #71717a;
-  --color-muted-foreground: #a1a1aa;
+  --color-muted: #4b5563;
+  --color-muted-foreground: #9ca3af;
+  --color-brand: #9333ea;
+  --color-brand-hover: #a855f7;
+  --color-brand-foreground: #ffffff;
+  --color-brand-soft: #faf5ff;
+  --color-brand-soft-border: #f3e8ff;
+  --color-brand-soft-text: #6b21a8;
 }
 
 @layer base {

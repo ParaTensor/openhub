@@ -4,11 +4,14 @@ use std::sync::Arc;
 use crate::runtime::ParaRouterRuntime;
 use unigateway_core::ExecutionTarget;
 
-/// Resolves a requested model name to one or more `provider_account_id`s,
-/// picking the best active upstream based on `model_provider_pricings`.
+/// Resolves a requested model name to a `provider_account_id` (pool id).
+/// Uses the current published pricing version. When `forced_provider_account_id` is set,
+/// routes to that account if it has an active row for the model; otherwise falls back to
+/// the best-ranked provider (top flag, then lowest input price).
 pub async fn resolve_model_target(
     state: &Arc<ParaRouterRuntime>,
     requested_model: &str,
+    forced_provider_account_id: Option<&str>,
 ) -> Result<ExecutionTarget> {
     let pool = &state.db;
 
@@ -19,20 +22,37 @@ pub async fn resolve_model_target(
         is_top_provider: bool,
     }
 
-    // Lookup active pricings for this model to find a target provider account
-    // For now we just pick a top priority or any active one constraint
-    let rows = sqlx::query_as::<_, PricingRow>(
-        r#"
-        SELECT provider_account_id, is_top_provider
-        FROM model_provider_pricings
-        WHERE model_id = $1 AND status = 'online'
-        ORDER BY is_top_provider DESC
-        LIMIT 1
-        "#,
-    )
-    .bind(requested_model)
-    .fetch_all(pool)
-    .await?;
+    let rows = if let Some(pid) = forced_provider_account_id.filter(|s| !s.is_empty()) {
+        sqlx::query_as::<_, PricingRow>(
+            r#"
+            SELECT mpp.provider_account_id, mpp.is_top_provider
+            FROM model_provider_pricings mpp
+            JOIN pricing_state ps ON ps.id = 1 AND mpp.version = ps.current_version
+            WHERE mpp.model_id = $1
+              AND mpp.provider_account_id = $2
+              AND mpp.status = 'online'
+            LIMIT 1
+            "#,
+        )
+        .bind(requested_model)
+        .bind(pid)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, PricingRow>(
+            r#"
+            SELECT mpp.provider_account_id, mpp.is_top_provider
+            FROM model_provider_pricings mpp
+            JOIN pricing_state ps ON ps.id = 1 AND mpp.version = ps.current_version
+            WHERE mpp.model_id = $1 AND mpp.status = 'online'
+            ORDER BY mpp.is_top_provider DESC, mpp.input_price ASC NULLS LAST
+            LIMIT 1
+            "#,
+        )
+        .bind(requested_model)
+        .fetch_all(pool)
+        .await?
+    };
 
     if rows.is_empty() {
         return Err(anyhow!(
@@ -41,8 +61,6 @@ pub async fn resolve_model_target(
         ));
     }
 
-    // For now we just select the first matched provider_account (PoolId)
-    // Later we can construct compound targets if unigateway supports load balancing across pools
     let selected_account_id = rows.into_iter().next().unwrap().provider_account_id;
 
     Ok(ExecutionTarget::Pool {

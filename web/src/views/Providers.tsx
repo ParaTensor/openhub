@@ -310,7 +310,7 @@ export default function ProvidersView() {
                     }
                   }}
                   placeholder={t('providers.placeholder_display_name')}
-                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
                 />
               </div>
 
@@ -320,7 +320,7 @@ export default function ProvidersView() {
                   value={formData.base_url}
                   onChange={(e) => setFormData({...formData, base_url: e.target.value})}
                   placeholder={t('providers.placeholder_base_url')}
-                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-mono"
                 />
               </div>
 
@@ -352,7 +352,7 @@ export default function ProvidersView() {
                               setFormData({...formData, keys: newKeys});
                             }}
                             placeholder={t('providers.placeholder_channel_name')}
-                            className="flex-1 px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            className="flex-1 px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-all"
                           />
                           <select
                             value={k.status}
@@ -361,7 +361,7 @@ export default function ProvidersView() {
                               newKeys[index].status = e.target.value;
                               setFormData({...formData, keys: newKeys});
                             }}
-                            className="bg-white border border-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            className="bg-white border border-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
                           >
                             <option value="active">{t('providers.active')}</option>
                             <option value="inactive">{t('providers.inactive')}</option>
@@ -378,7 +378,7 @@ export default function ProvidersView() {
                             }}
                             placeholder={isEditing && k.id ? t('providers.placeholder_key_editing') : t('providers.placeholder_key_new')}
                             className={clsx(
-                              "w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono pr-24",
+                              "w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono pr-24",
                               k.key && k.key.length > 0 ? "border-emerald-200 bg-emerald-50/30" : "border-zinc-200"
                             )}
                           />
@@ -429,7 +429,7 @@ export default function ProvidersView() {
               <button
                 onClick={handleSaveProvider}
                 disabled={saving || !formData.provider.trim() || (!isEditing && formData.keys.every(k => !k.key.trim()))}
-                className="bg-blue-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {saving ? (
                   <>
