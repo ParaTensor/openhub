@@ -156,6 +156,22 @@ else
     echo "No TUNNEL_TOKEN provided, skipping cloudflared setup."
 fi
 
+# 8.6 Hub mail (Resend): persist API key for systemd EnvironmentFile
+if [ -n "$RESEND_API_KEY" ]; then
+    ENV_FILE="$HOME/.pararouter.env"
+    if [ -f "$ENV_FILE" ]; then
+        grep -v '^RESEND_API_KEY=' "$ENV_FILE" > "${ENV_FILE}.tmp" || true
+        chmod 600 "${ENV_FILE}.tmp"
+        mv "${ENV_FILE}.tmp" "$ENV_FILE"
+    else
+        umask 077
+        : >"$ENV_FILE"
+    fi
+    printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY" >>"$ENV_FILE"
+    chmod 600 "$ENV_FILE"
+    echo "Updated RESEND_API_KEY in $ENV_FILE"
+fi
+
 # 9. Start services
 echo "Starting services..."
 sudo systemctl enable $HUB_SERVICE

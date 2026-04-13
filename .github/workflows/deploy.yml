@@ -11,6 +11,7 @@ jobs:
       SERVER_IP: ${{ secrets.TENCENT_HOST_IP }}
       SERVER_USER: ${{ secrets.TENCENT_HOST_USER }}
       TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
     steps:
       - name: Checkout Code
@@ -53,5 +54,5 @@ jobs:
             # Execute setup script
             cd $DEST_DIR
             chmod +x deploy/remote_setup_and_build.sh
-            TUNNEL_TOKEN=\"$TUNNEL_TOKEN\" bash deploy/remote_setup_and_build.sh
+            TUNNEL_TOKEN=\"$TUNNEL_TOKEN\" RESEND_API_KEY=\"$RESEND_API_KEY\" bash deploy/remote_setup_and_build.sh
           "
