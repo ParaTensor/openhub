@@ -16,18 +16,18 @@ sudo systemctl stop xrouter-hub || true
 sudo systemctl stop xrouter-gateway || true
 sudo systemctl disable xrouter-hub || true
 sudo systemctl disable xrouter-gateway || true
-sudo systemctl stop openhub-hub || true
-sudo systemctl stop openhub-gateway || true
-sudo systemctl disable openhub-hub || true
-sudo systemctl disable openhub-gateway || true
+sudo systemctl stop pararouter-hub || true
+sudo systemctl stop pararouter-gateway || true
+sudo systemctl disable pararouter-hub || true
+sudo systemctl disable pararouter-gateway || true
 
 # 1. Update and install basic dependencies
 if command -v yum &> /dev/null; then
     sudo yum update -y || true
-    sudo yum install -y gcc gcc-c++ make pkgconfig openssl-devel curl git postgresql-server postgresql-contrib
+    sudo yum install -y gcc gcc-c++ make pkgconfig openssl-devel curl git postgresql-server postgresql-contrib nginx
 else
     sudo apt-get update
-    sudo apt-get install build-essential pkg-config libssl-dev curl git postgresql postgresql-contrib -y
+    sudo apt-get install build-essential pkg-config libssl-dev curl git postgresql postgresql-contrib nginx -y
 fi
 
 # 1.1 Initialize Database if not exists
@@ -105,7 +105,7 @@ echo "Building Node workspace (Frontend / Hub / Shared)..."
 cd $PROJECT_DIR
 npm config set registry https://registry.npmmirror.com/
 npm install
-npm run build -w @openhub/web
+npm run build -w @pararouter/web
 
 # 7. Build Gateway (Rust)
 echo "Building Gateway (this may take a few minutes)..."
