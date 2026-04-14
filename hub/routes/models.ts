@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import {Router} from 'express';
+import type {Request, Response} from 'express';
 import { pool } from '../db';
 import { requireRole } from '../middleware/auth';
 import { ModelPayload } from '@pararouter/shared';
@@ -157,7 +158,8 @@ async function rebuildProviderTypesFromModels() {
   }
 }
 
-router.get('/', async (_req, res) => {
+/** 已发布路由的模型列表；供登录页与首页与 /models 一致的数据源（匿名可读）。 */
+export async function listPublishedRoutedModels(_req: Request, res: Response) {
   const client = await pool.connect();
   try {
     const stateResult = await client.query('SELECT current_version FROM pricing_state WHERE id = 1');
@@ -236,7 +238,9 @@ router.get('/', async (_req, res) => {
   } finally {
     client.release();
   }
-});
+}
+
+router.get('/', listPublishedRoutedModels);
 
 router.post('/sync', requireRole('admin'), async (req, res) => {
   const models = Array.isArray(req.body?.models) ? (req.body.models as ModelPayload[]) : [];

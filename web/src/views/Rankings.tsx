@@ -167,7 +167,7 @@ export default function RankingsView() {
           </table>
           {rankings.length === 0 && (
             <div className="px-6 py-12 text-center text-zinc-500">
-              No models found in the leaderboard.
+              {t('rankings.empty_leaderboard')}
             </div>
           )}
         </div>

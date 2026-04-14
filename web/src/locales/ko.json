@@ -1,10 +1,11 @@
 {
   "navbar": {
-    "pararouter": "ParaRouter"
+    "pararouter": "ParaRouter",
+    "docs": "문서",
+    "models": "모델 목록"
   },
   "landing": {
-    "nav_models": "모델",
-    "nav_login": "로그인",
+    "nav_sign_up": "가입",
     "nav_get_key": "API 키 받기",
     "hero_title": "LLM 워크로드를 위한 통합 게이트웨이",
     "hero_desc_start": "더 나은 ",
@@ -24,25 +25,102 @@
     "stat3_label": "라우팅 및 스케줄링",
     "stat4_val": "사용량 기반",
     "stat4_label": "투명한 미터링",
-    "explorer_title": "모델 카탈로그",
-    "explorer_subtitle": "공급자, 토큰 단가, 지연 등 전체 표는 로그인 후에 제공됩니다.",
-    "models_locked_desc": "라우팅 및 상업적 세부 정보의 대량 수집을 줄이기 위해 인증된 사용자에게만 공개합니다.",
-    "models_locked_cta": "로그인 후 모델 보기",
+    "explorer_title": "전체 모델",
+    "explorer_subtitle": "공식 모델 ID, 컨텍스트 길이, 참고 종량제 단가(USD / 100만 토큰).",
+    "model_provider_routed": "게시된 라우트",
+    "model_footer_routed": "로그인 후 라우트별 지연 시간 확인",
     "models_loading": "모델을 불러오는 중…",
     "models_empty": "게시된 모델이 아직 없습니다.",
     "models_error": "모델을 불러오지 못했습니다. 나중에 다시 시도해 주세요.",
     "col_model": "모델",
-    "col_provider": "공급자",
     "col_context": "컨텍스트",
     "col_prompt": "입력 / 100만 토큰",
     "col_completion": "출력 / 100만 토큰",
-    "col_latency": "지연",
     "bottom_title": "연결할 준비가 되셨나요?",
     "bottom_desc": "로그인하거나 가입해 키를 발급받고, SDK의 베이스 URL을 설정한 뒤 모델을 호출하세요.",
     "lang_menu_button_aria": "언어 메뉴, 현재: {{current}}",
     "lang_list_aria": "표시 언어 선택"
   },
   "models": {
-    "placeholder_search": "모델 검색..."
+    "placeholder_search": "모델 검색...",
+    "descriptions": {
+      "anthropic/claude-3.5-sonnet": "Anthropic의 가장 똑똑한 모델로, 높은 성능과 속도의 균형이 뛰어납니다.",
+      "openai/o1-preview": "OpenAI의 추론 특화 모델로, 사고 토큰으로 복잡한 문제를 해결합니다.",
+      "openai/gpt-4o": "OpenAI의 최첨단 멀티모달 모델로, 속도와 추론에 최적화되어 있습니다.",
+      "google/gemini-1.5-pro": "Google의 차세대 모델로, 매우 큰 컨텍스트와 강력한 추론을 제공합니다.",
+      "meta-llama/llama-3.1-405b": "세계 최대급 오픈웨이트 모델로, 상용 최상위 모델과 경쟁합니다.",
+      "mistralai/mistral-large": "Mistral의 플래그십으로, 추론과 다국어에 강합니다.",
+      "deepseek/deepseek-chat": "효율적이고 가성비가 좋으며, 코딩과 수학에 강합니다."
+    }
+  },
+  "chat": {
+    "error_no_model_selected": "모델이 선택되지 않았습니다",
+    "error_no_body": "응답 본문이 없습니다",
+    "stream_error_prefix": "**오류:**",
+    "stream_error_fallback": "알 수 없는 오류가 발생했습니다. 콘솔 또는 게이트웨이 로그를 확인하세요."
+  },
+  "globalmodels": {
+    "remote_sync_subtitle": "원격 레지스트리에서 최신 가격 데이터를 가져옵니다",
+    "edit_modal_subtitle": "가격과 메타데이터를 전역으로 편집합니다",
+    "alert_save_failed": "모델을 업데이트하지 못했습니다.",
+    "alert_sync_url_required": "동기화 URL을 입력하세요.",
+    "alert_sync_success": "모델 {{count}}개를 동기화했습니다.",
+    "alert_sync_failed": "원격 동기화에 실패했습니다.",
+    "filter_all": "전체",
+    "filter_openai": "OpenAI",
+    "filter_anthropic": "Anthropic",
+    "filter_google": "Google",
+    "syncing": "동기화 중…",
+    "start_sync": "동기화 시작"
+  },
+  "providers": {
+    "unknown_error": "알 수 없는 오류"
+  },
+  "rankings": {
+    "empty_leaderboard": "리더보드에 모델이 없습니다."
+  },
+  "docs": {
+    "badge": "문서",
+    "title": "HTTP API 개발자 가이드",
+    "subtitle": "OpenAI Chat Completions 호환: 인증, 베이스 URL 및 핵심 요청 필드를 운영 환경 기준으로 정리했습니다.",
+    "meta_compat": "OpenAI 호환",
+    "endpoint_label": "주 엔드포인트",
+    "copy_url": "URL 복사",
+    "toc_title": "이 페이지",
+    "quick_title": "빠른 참조",
+    "quick_base": "베이스 URL",
+    "quick_path": "경로",
+    "quick_auth": "인증",
+    "quick_auth_value": "모든 요청에 Authorization: Bearer <API 키> 를 포함합니다.",
+    "intro_title": "개요",
+    "intro_body": "ParaRouter는 LLM 호출을 위한 통합 게이트웨이입니다. 요청·응답은 OpenAI Chat Completions 규약을 따르므로 baseURL만 변경하면 기존 SDK를 그대로 사용할 수 있습니다.",
+    "integration_title": "연동 절차",
+    "integration_step1": "「키」 화면에서 API 키를 만들고 서버나 비밀 관리 도구에 안전하게 보관합니다.",
+    "integration_step2": "요청마다 Content-Type: application/json 과 Authorization: Bearer <키> 를 설정합니다.",
+    "integration_step3": "model에는 「모델」 카탈로그의 논리 id를 사용합니다. 동일 id가 여러 공급자 계정에 있을 때는 pararouter_provider_account_id로 라우트를 고정할 수 있습니다.",
+    "integration_curl": "cURL",
+    "integration_sdk": "OpenAI SDK(Node)",
+    "code_examples_label": "코드 예시",
+    "params_title": "주요 매개변수",
+    "params_note": "필드 이름은 OpenAI와 동일합니다. 선택 필드는 생략할 수 있습니다.",
+    "table_field": "필드",
+    "table_detail": "설명",
+    "param_model": "model",
+    "param_model_desc": "필수. 카탈로그의 논리 모델 id.",
+    "param_messages": "messages",
+    "param_messages_desc": "필수. 채팅 메시지 배열(role + content).",
+    "param_stream": "stream",
+    "param_stream_desc": "선택. true이면 SSE 스트리밍.",
+    "param_temperature": "temperature",
+    "param_temperature_desc": "선택. 샘플링 온도.",
+    "param_max_tokens": "max_tokens",
+    "param_max_tokens_desc": "선택. 생성 토큰 상한.",
+    "param_provider": "pararouter_provider_account_id",
+    "param_provider_desc": "선택. 동일 model id가 여러 공급자 계정에 있을 때 특정 계정으로 고정합니다.",
+    "cta_title": "다음 단계",
+    "cta_body": "키를 발급한 뒤 환경에서 테스트 요청을 보내 보세요.",
+    "cta_keys": "API 키",
+    "cta_models": "모델 목록",
+    "copy_code": "코드 복사"
   }
 }

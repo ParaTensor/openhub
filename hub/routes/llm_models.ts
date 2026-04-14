@@ -1,14 +1,22 @@
-import { Router } from 'express';
-import { pool } from '../db';
-import { requireRole } from '../middleware/auth';
+import type {Request, Response} from 'express';
+import {Router} from 'express';
+import {pool} from '../db';
+import {requireRole} from '../middleware/auth';
+
+/** 首页等匿名场景；在 server 中挂在全局 authenticate 之前 */
+export async function handlePublicLlmModelsList(_req: Request, res: Response) {
+  try {
+    const {rows} = await pool.query('SELECT * FROM llm_models ORDER BY name DESC');
+    res.json(rows);
+  } catch (e: any) {
+    console.error('GET /api/llm-models:', e);
+    res.status(500).json({error: String(e?.message || e)});
+  }
+}
 
 const router = Router();
-router.use(requireRole('admin'));
 
-router.get('/', async (_req, res) => {
-  const { rows } = await pool.query('SELECT * FROM llm_models ORDER BY name DESC');
-  res.json(rows);
-});
+router.use(requireRole('admin'));
 
 router.put('/:id', async (req, res) => {
   const id = String(req.params.id || '').trim();
@@ -28,7 +36,7 @@ router.put('/:id', async (req, res) => {
   res.json({ status: 'updated' });
 });
 
-router.post('/remote-sync', async (req, res) => {
+router.post('/remote-sync', requireRole('admin'), async (req, res) => {
   const { url, payload } = req.body;
   
   let modelsToSync: any[] = [];

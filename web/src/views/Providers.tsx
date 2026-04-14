@@ -102,7 +102,7 @@ export default function ProvidersView() {
       await loadProviders();
     } catch (err: any) {
       console.error('Failed to save provider:', err);
-      setError(err.message || 'Unknown error');
+      setError(err.message || t('providers.unknown_error'));
     } finally {
       setSaving(false);
     }

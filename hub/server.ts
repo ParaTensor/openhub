@@ -10,10 +10,10 @@ dotenv.config({ path: path.join(__dirname, '.env'), override: true });
 import { pool, initSchema } from './db';
 import { AuthUser, AuthenticatedRequest } from './types';
 import authRouter from './routes/auth';
-import modelsRouter from './routes/models';
+import modelsRouter, {listPublishedRoutedModels} from './routes/models';
 import pricingRouter from './routes/pricing';
 import gatewayRouter from './routes/gateway';
-import llmModelsRouter from './routes/llm_models';
+import llmModelsRouter, {handlePublicLlmModelsList} from './routes/llm_models';
 import providersRouter from './routes/providers';
 import { authenticate } from './middleware/auth';
 import keysRouter from './routes/keys';
@@ -45,6 +45,11 @@ async function startServer() {
   });
 
   app.use(express.json());
+
+  // 官方全局模型列表：必须在 authenticate 之前注册，否则未登录首页会 401
+  app.get('/api/llm-models', handlePublicLlmModelsList);
+  // 已发布路由模型（与登录后 /models 同源），供首页排序与展示
+  app.get('/api/models', listPublishedRoutedModels);
 
   // Check Auth Middleware for /api routes
   app.use('/api', authenticate);

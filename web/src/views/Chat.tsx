@@ -12,6 +12,8 @@ interface Message {
   content: string;
   timestamp: string;
   model?: string;
+  /** Provider account label at send time (same logical model can exist on multiple providers). */
+  provider?: string;
 }
 
 interface ChatSession {
@@ -166,7 +168,8 @@ export default function ChatView() {
       role: 'assistant',
       content: '',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      model: selectedModelInfo?.name || selectedModelInfo?.id || ''
+      model: selectedModelInfo?.name || selectedModelInfo?.id || '',
+      provider: selectedModelInfo?.provider
     };
 
     let currentMessages = [...newMessages, initAssistantMsg];
@@ -179,7 +182,7 @@ export default function ChatView() {
       
       const logicalModelId = selectedModelInfo?.id;
       const providerAccountId = selectedModelInfo?.provider_account_id;
-      if (!logicalModelId) throw new Error('No model selected');
+      if (!logicalModelId) throw new Error(t('chat.error_no_model_selected'));
 
       const payload: Record<string, unknown> = {
         model: logicalModelId,
@@ -203,7 +206,7 @@ export default function ChatView() {
         throw new Error(errText);
       }
 
-      if (!response.body) throw new Error("No body in response");
+      if (!response.body) throw new Error(t('chat.error_no_body'));
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -260,7 +263,7 @@ export default function ChatView() {
     } catch (err: any) {
       console.error(err);
       currentMessages = currentMessages.map(m => 
-        m.id === assistantMsgId ? { ...m, content: (m.content || "") + `\n\n**Error:** ${err.message || 'Unknown error occurred. Please check console or Gateway Logs.'}` } : m
+        m.id === assistantMsgId ? { ...m, content: (m.content || "") + `\n\n${t('chat.stream_error_prefix')} ${err.message || t('chat.stream_error_fallback')}` } : m
       );
       updateSession(sessionId, currentMessages);
     } finally {
@@ -400,7 +403,7 @@ export default function ChatView() {
                   </div>
                 ))}
                 {models.length === 0 && (
-                  <div className="px-4 py-3 text-xs text-zinc-500 text-center">No models available</div>
+                  <div className="px-4 py-3 text-xs text-zinc-500 text-center">{t('models.empty_no_models_title')}</div>
                 )}
               </div>
             </div>
@@ -437,12 +440,24 @@ export default function ChatView() {
                 )}>
                   {message.content || (isSessionStreaming(activeSessionId) && message.role === 'assistant' ? <span className="animate-pulse">...</span> : null)}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
                   <span>{message.timestamp}</span>
-                  {message.role === 'assistant' && message.model && (
+                  {message.role === 'assistant' && (message.model || message.provider) && (
                     <>
                       <span className="opacity-50">•</span>
-                      <span className="text-zinc-500">{message.model}</span>
+                      {message.provider ? (
+                        <>
+                          <span className="text-zinc-500">{message.provider}</span>
+                          {message.model ? (
+                            <>
+                              <span className="opacity-50">•</span>
+                              <span className="text-zinc-500">{message.model}</span>
+                            </>
+                          ) : null}
+                        </>
+                      ) : (
+                        message.model ? <span className="text-zinc-500">{message.model}</span> : null
+                      )}
                     </>
                   )}
                 </div>

@@ -64,24 +64,24 @@ export default function GlobalModelsView() {
       loadModels();
     } catch (err) {
       console.error(err);
-      alert('Failed to update model.');
+      alert(t('globalmodels.alert_save_failed'));
     }
   };
 
   const handleRemoteSync = async () => {
     if (!syncUrl) {
-      alert('Please enter a sync URL.');
+      alert(t('globalmodels.alert_sync_url_required'));
       return;
     }
     setSyncing(true);
     try {
       const res = await apiPost('/api/llm-models/remote-sync', { url: syncUrl });
-      alert(`Successfully synced ${(res as any).count} models.`);
+      alert(t('globalmodels.alert_sync_success', {count: (res as any).count}));
       setIsSyncModalOpen(false);
       loadModels();
     } catch (err) {
       console.error(err);
-      alert('Remote sync failed.');
+      alert(t('globalmodels.alert_sync_failed'));
     } finally {
       setSyncing(false);
     }
@@ -124,17 +124,24 @@ export default function GlobalModelsView() {
       </div>
 
       <div className="flex gap-2.5 flex-wrap">
-        {['All', 'OpenAI', 'Anthropic', 'Google'].map((prov) => (
+        {(
+          [
+            {id: 'all', labelKey: 'globalmodels.filter_all'},
+            {id: 'openai', labelKey: 'globalmodels.filter_openai'},
+            {id: 'anthropic', labelKey: 'globalmodels.filter_anthropic'},
+            {id: 'google', labelKey: 'globalmodels.filter_google'},
+          ] as const
+        ).map(({id, labelKey}) => (
           <button
-            key={prov}
-            onClick={() => setProviderFilter(prov.toLowerCase())}
+            key={id}
+            onClick={() => setProviderFilter(id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              providerFilter === prov.toLowerCase()
+              providerFilter === id
                 ? 'bg-zinc-900 text-white shadow-sm'
                 : 'bg-white border border-gray-200 text-zinc-600 hover:bg-gray-50'
             }`}
           >
-            {prov}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -146,7 +153,7 @@ export default function GlobalModelsView() {
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
               <div>
                 <h3 className="font-bold text-lg">{t('globalmodels.remote_sync')}</h3>
-                <p className="text-xs text-zinc-500 mt-0.5">Fetch latest pricing data from remote registry</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{t('globalmodels.remote_sync_subtitle')}</p>
               </div>
             </div>
             <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
@@ -173,7 +180,7 @@ export default function GlobalModelsView() {
                 className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {syncing ? <RefreshCw size={16} className="animate-spin" /> : null}
-                {syncing ? 'Syncing...' : 'Start Sync'}
+                {syncing ? t('globalmodels.syncing') : t('globalmodels.start_sync')}
               </button>
             </div>
           </div>
@@ -187,7 +194,7 @@ export default function GlobalModelsView() {
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
               <div>
                 <h3 className="font-bold text-lg">{t('globalmodels.edit_global_model')}</h3>
-                <p className="text-xs text-zinc-500 mt-0.5">Edit pricing and metadata globally</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{t('globalmodels.edit_modal_subtitle')}</p>
               </div>
             </div>
             <div className="flex-1 overflow-auto px-5 py-5 space-y-4">

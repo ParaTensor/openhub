@@ -18,7 +18,11 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const postLoginPath = React.useMemo(() => safePostLoginPath(searchParams.get('next')), [searchParams]);
-  const [mode, setMode] = React.useState<Mode>('login');
+  const [mode, setMode] = React.useState<Mode>(() => (searchParams.get('mode') === 'register' ? 'register' : 'login'));
+
+  React.useEffect(() => {
+    if (searchParams.get('mode') === 'register') setMode('register');
+  }, [searchParams]);
   const [busy, setBusy] = React.useState(false);
   const [message, setMessage] = React.useState<string>('');
   const [error, setError] = React.useState<string>('');

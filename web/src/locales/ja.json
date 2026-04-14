@@ -1,10 +1,11 @@
 {
   "navbar": {
-    "pararouter": "ParaRouter"
+    "pararouter": "ParaRouter",
+    "docs": "ドキュメント",
+    "models": "モデル一覧"
   },
   "landing": {
-    "nav_models": "モデル",
-    "nav_login": "ログイン",
+    "nav_sign_up": "新規登録",
     "nav_get_key": "APIキーを取得",
     "hero_title": "LLMワークロード向けの統合ゲートウェイ",
     "hero_desc_start": "より良い",
@@ -24,25 +25,102 @@
     "stat3_label": "ルーティングとスケジューリング",
     "stat4_val": "従量課金",
     "stat4_label": "透明なメータリング",
-    "explorer_title": "モデルカタログ",
-    "explorer_subtitle": "プロバイダ、トークン単価、遅延などの一覧はログイン後に表示されます。",
-    "models_locked_desc": "ルーティングや商用情報の自動取得を抑えるため、認証済みユーザーのみが詳細を閲覧できます。",
-    "models_locked_cta": "ログインしてモデルを見る",
+    "explorer_title": "すべてのモデル",
+    "explorer_subtitle": "公式モデル ID、コンテキスト長、参考従量単価（USD / 100万トークン）。",
+    "model_provider_routed": "公開ルート",
+    "model_footer_routed": "サインイン後にルート別レイテンシを表示",
     "models_loading": "モデルを読み込み中…",
     "models_empty": "公開中のモデルはまだありません。",
     "models_error": "モデルを読み込めませんでした。しばらくしてから再度お試しください。",
     "col_model": "モデル",
-    "col_provider": "プロバイダ",
     "col_context": "コンテキスト",
     "col_prompt": "入力 / 100万トークン",
     "col_completion": "出力 / 100万トークン",
-    "col_latency": "遅延",
     "bottom_title": "接続の準備はできましたか？",
     "bottom_desc": "サインインまたは登録してキーを発行し、SDKのベースURLを設定すれば、すぐにモデルを呼び出せます。",
     "lang_menu_button_aria": "言語メニュー、現在：{{current}}",
     "lang_list_aria": "表示言語を選択"
   },
   "models": {
-    "placeholder_search": "モデルを検索..."
+    "placeholder_search": "モデルを検索...",
+    "descriptions": {
+      "anthropic/claude-3.5-sonnet": "Anthropic 史上最強クラスのモデルで、性能と速度のバランスが高い。",
+      "openai/o1-preview": "OpenAI の推論特化モデル。思考トークンで複雑な問題に取り組む。",
+      "openai/gpt-4o": "OpenAI の先端マルチモーダルモデル。速度と推論に最適化。",
+      "google/gemini-1.5-pro": "Google の次世代モデル。巨大なコンテキストと強力な推論。",
+      "meta-llama/llama-3.1-405b": "世界最大級のオープンウェイトモデル。商用トップクラスに匹敵。",
+      "mistralai/mistral-large": "Mistral のフラッグシップ。推論と多言語に強い。",
+      "deepseek/deepseek-chat": "効率的でコスト性能に優れ、コーディングと数学が得意。"
+    }
+  },
+  "chat": {
+    "error_no_model_selected": "モデルが選択されていません",
+    "error_no_body": "レスポンス本文がありません",
+    "stream_error_prefix": "**エラー：**",
+    "stream_error_fallback": "不明なエラーが発生しました。コンソールまたはゲートウェイログを確認してください。"
+  },
+  "globalmodels": {
+    "remote_sync_subtitle": "リモートレジストリから最新の価格データを取得します",
+    "edit_modal_subtitle": "価格とメタデータをグローバルに編集します",
+    "alert_save_failed": "モデルの更新に失敗しました。",
+    "alert_sync_url_required": "同期用 URL を入力してください。",
+    "alert_sync_success": "{{count}} 件のモデルを同期しました。",
+    "alert_sync_failed": "リモート同期に失敗しました。",
+    "filter_all": "すべて",
+    "filter_openai": "OpenAI",
+    "filter_anthropic": "Anthropic",
+    "filter_google": "Google",
+    "syncing": "同期中…",
+    "start_sync": "同期を開始"
+  },
+  "providers": {
+    "unknown_error": "不明なエラー"
+  },
+  "rankings": {
+    "empty_leaderboard": "ランキングにモデルが見つかりません。"
+  },
+  "docs": {
+    "badge": "ドキュメント",
+    "title": "HTTP API 開発者ガイド",
+    "subtitle": "OpenAI Chat Completions 互換の認証・ベース URL・主要パラメータを本番向けに整理したリファレンスです。",
+    "meta_compat": "OpenAI 互換",
+    "endpoint_label": "主エンドポイント",
+    "copy_url": "URL をコピー",
+    "toc_title": "このページ",
+    "quick_title": "クイックリファレンス",
+    "quick_base": "ベース URL",
+    "quick_path": "パス",
+    "quick_auth": "認可",
+    "quick_auth_value": "すべてのリクエストに Authorization: Bearer <API キー> を付与します。",
+    "intro_title": "概要",
+    "intro_body": "ParaRouter は LLM 呼び出しの統合ゲートウェイです。リクエスト／レスポンスは OpenAI Chat Completions に準拠するため、baseURL を差し替えれば既存の SDK をそのまま利用できます。",
+    "integration_title": "統合手順",
+    "integration_step1": "「キー」画面で API キーを作成し、サーバ側またはシークレット管理に安全に保管します。",
+    "integration_step2": "各リクエストに Content-Type: application/json と Authorization: Bearer <キー> を付けます。",
+    "integration_step3": "model には「モデル」カタログの論理 id を指定します。同一 id が複数プロバイダアカウントにある場合は pararouter_provider_account_id でルートを固定できます。",
+    "integration_curl": "cURL",
+    "integration_sdk": "OpenAI SDK（Node）",
+    "code_examples_label": "コード例",
+    "params_title": "主なパラメータ",
+    "params_note": "フィールド名は OpenAI と同じです。任意項目は省略可能です。",
+    "table_field": "フィールド",
+    "table_detail": "説明",
+    "param_model": "model",
+    "param_model_desc": "必須。カタログ上の論理モデル id。",
+    "param_messages": "messages",
+    "param_messages_desc": "必須。チャットメッセージの配列（role + content）。",
+    "param_stream": "stream",
+    "param_stream_desc": "任意。true で SSE ストリーミング。",
+    "param_temperature": "temperature",
+    "param_temperature_desc": "任意。サンプリング温度。",
+    "param_max_tokens": "max_tokens",
+    "param_max_tokens_desc": "任意。生成トークン数の上限。",
+    "param_provider": "pararouter_provider_account_id",
+    "param_provider_desc": "任意。同一 model id が複数プロバイダアカウントに紐づくとき、特定アカウントに固定します。",
+    "cta_title": "次のステップ",
+    "cta_body": "キーを発行し、環境からテストリクエストを送ってください。",
+    "cta_keys": "API キー",
+    "cta_models": "モデル一覧",
+    "copy_code": "コードをコピー"
   }
 }
