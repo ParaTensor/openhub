@@ -1,6 +1,7 @@
 import React from 'react';
 import {Menu, X, ChevronDown, Key, Settings, LogOut, LayoutGrid, BarChart3, MessageSquare, BookOpen, BadgeDollarSign, PlugZap, Database, UsersRound} from 'lucide-react';
 import {cn} from '../lib/utils';
+import {APP_SHELL_MAX_CLASS, APP_SHELL_PAD_CLASS} from '../lib/appShellLayout';
 import {clearAuthSession, localUser} from '../lib/session';
 import {apiPost} from '../lib/api';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
@@ -42,7 +43,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur-sm">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+      <div className={`mx-auto ${APP_SHELL_MAX_CLASS} ${APP_SHELL_PAD_CLASS}`}>
         <div className="flex h-14 items-center justify-between">
           <Link to="/models" className="group flex cursor-pointer items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 transition-transform group-hover:scale-105">

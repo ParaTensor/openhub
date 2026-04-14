@@ -5,6 +5,7 @@ import {localUser} from '../lib/session';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router-dom';
 import {sortByNameThenId} from '../lib/modelSort';
+import {MODEL_CARD_GRID, MODEL_CARD_SHELL} from '../lib/modelCardShell';
 
 type RoutedModel = {
   id: string;
@@ -121,13 +122,12 @@ export default function ModelsView() {
     return <div className="text-center text-zinc-500">{t('models.loading_models')}</div>;
   }
 
-  const gridClass =
-    'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3';
+  const gridClass = MODEL_CARD_GRID;
 
   const renderCard = (model: RoutedModel, mode: 'routed' | 'catalog') => (
     <div
       key={mode === 'routed' ? `${model.id}::${model.provider_account_id ?? ''}` : `${model.id}::catalog`}
-      className="group bg-white border border-gray-100 rounded-xl p-3 hover:border-zinc-300 transition-all duration-200 flex flex-col min-h-[220px]"
+      className={MODEL_CARD_SHELL}
     >
       <div className="flex items-start justify-between mb-2 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -225,7 +225,7 @@ export default function ModelsView() {
   const hasAny = routed.length > 0 || catalogOnly.length > 0;
 
   return (
-    <div className="space-y-8 w-full min-w-0 max-w-[1800px] mx-auto pb-16">
+    <div className="mx-auto w-full min-w-0 max-w-full space-y-8 pb-16">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 pt-2">
         <div className="space-y-2 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">{t('models.the_unified_interface_for_llms')}</h1>

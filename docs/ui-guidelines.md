@@ -71,7 +71,19 @@ Global design tokens live in `web/src/index.css` under `@theme` (`background`, `
 
 ### 5.4 Layout, spacing, icons
 
+- **App content width**: the authenticated main column, navbar inner row, and public **Landing** page share one horizontal constraint — **`max-w-[1600px]`** with **`px-4 sm:px-6 lg:px-8`** — via `web/src/lib/appShellLayout.ts` (`APP_SHELL_MAX_CLASS`, `APP_SHELL_PAD_CLASS`). Do not reintroduce `max-w-6xl` on those shells; it narrows the marketing page relative to `/models` and feels like a different product.
+- **Unauthenticated Landing column**: the navbar row still uses **`APP_SHELL_MAX_CLASS`** (**1600px**), but the scrollable blocks below (**hero + stats**, **「全部模型」**, **bottom CTA**) share **`LANDING_CONTENT_COLUMN_CLASS`** in `appShellLayout.ts` — i.e. **`max-w-6xl`** with the same horizontal padding as the shell — so the model explorer does not read wider than the hero. Logged-in `/models` remains **full `APP_SHELL`** width for parity with the product shell.
 - **Whitespace**: generous vertical rhythm and section padding; avoid cramped marketing blocks.
 - **Alignment**: hero and primary narrative **left-aligned**; tables and dashboards may follow data grid norms.
 - **Section separation**: light horizontal rules (`border-t` / `border-b` on `zinc-100` or `gray-100`).
 - **Icons**: thin stroke, minimal (`lucide-react` defaults); pair with text at `h-4 w-4`–`h-5 w-5` in headers and buttons.
+
+### 5.5 Information-dense card grids (model catalog, pricing summaries)
+
+Cards that bundle **many independent facts** (title, id badge, provider line, description, 2×2 pricing blocks, footnotes) need a **minimum readable width**. Packing six narrow columns on wide monitors causes awkward wrapping, truncated titles, and weak “card” grouping.
+
+- **Column cap**: for this pattern, use **at most 4 columns** from the `lg` breakpoint upward (`grid-cols-1` → `sm:2` → `md:3` → `lg:4`). Do **not** add `xl:grid-cols-5` or `2xl:grid-cols-6` for the same tile design unless the card content is drastically simplified (e.g. single line + one metric).
+- **Gutter**: use **`gap-4`** (16px) between tiles, not `gap-3`, so columns read as separate units.
+- **Card padding**: prefer **`p-4`** on the card shell for tiles that include sub-grids (pricing cells).
+- **Single source of truth**: the landing “全部模型” explorer and the authenticated `/models` view must share the same grid + shell classes (`web/src/lib/modelCardShell.ts` — `MODEL_CARD_GRID`, `MODEL_CARD_SHELL`) so logged-in and logged-out layouts stay aligned.
+- **Wider canvases**: if the product needs more models visible above the fold, prefer **pagination, search, or collapsible sections**—not extra columns that shrink each card below a comfortable width.

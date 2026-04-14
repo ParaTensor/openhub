@@ -15,6 +15,7 @@ import LandingView from './views/Landing';
 import CustomersView from './views/Customers';
 import {motion} from 'motion/react';
 import {Link, Navigate, Route, Routes, useLocation} from 'react-router-dom';
+import {APP_SHELL_MAX_CLASS, APP_SHELL_PAD_CLASS} from './lib/appShellLayout';
 import {isAuthenticated} from './lib/session';
 import {useTranslation} from 'react-i18next';
 
@@ -43,7 +44,7 @@ export default function App() {
         <div
           className={
             showShell && !isChatRoute
-              ? 'max-w-[1600px] w-full min-w-0 mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 overflow-x-hidden'
+              ? `${APP_SHELL_MAX_CLASS} w-full min-w-0 mx-auto ${APP_SHELL_PAD_CLASS} py-12 flex-1 overflow-x-hidden`
               : isChatRoute
                 ? 'flex-1 flex flex-col h-full min-w-0'
                 : isLandingRoute && !authed
@@ -91,7 +92,7 @@ export default function App() {
       </main>
 
       {showShell && !isChatRoute && <footer className="bg-white py-12">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`${APP_SHELL_MAX_CLASS} mx-auto ${APP_SHELL_PAD_CLASS}`}>
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-gray-500">
               <Link to="/models" className="hover:text-black transition-colors">{t('footer.models')}</Link>

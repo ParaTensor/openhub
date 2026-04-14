@@ -6,6 +6,8 @@ import {cn} from '../lib/utils';
 import LocaleSwitcher from '../components/LocaleSwitcher';
 import {apiGet} from '../lib/api';
 import {sortByNameThenId} from '../lib/modelSort';
+import {APP_SHELL_MAX_CLASS, APP_SHELL_PAD_CLASS, LANDING_CONTENT_COLUMN_CLASS} from '../lib/appShellLayout';
+import {MODEL_CARD_GRID, MODEL_CARD_SHELL} from '../lib/modelCardShell';
 
 const accent = 'text-purple-600';
 const accentBg = 'bg-purple-600 hover:bg-purple-500';
@@ -115,13 +117,14 @@ export default function Landing() {
     return map;
   }, [routedSnapshot]);
 
-  const gridClass =
-    'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3';
+  const gridClass = MODEL_CARD_GRID;
 
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
       <header className="sticky top-0 z-50 border-b border-zinc-100 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto grid h-14 max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
+        <div
+          className={`mx-auto grid h-14 ${APP_SHELL_MAX_CLASS} grid-cols-[auto_1fr_auto] items-center gap-3 ${APP_SHELL_PAD_CLASS} sm:gap-4`}
+        >
           <Link to="/" className="flex shrink-0 items-center gap-2.5 font-bold tracking-tight">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600">
               <div className="h-3.5 w-3.5 rotate-45 rounded-sm bg-white" />
@@ -153,9 +156,9 @@ export default function Landing() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 pb-6 pt-12 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
+      <div className={`${LANDING_CONTENT_COLUMN_CLASS} pb-6 pt-12 sm:pt-16 lg:pt-20`}>
         <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12 lg:items-center">
-          <div className="max-w-2xl lg:col-span-6 lg:max-w-none xl:col-span-7">
+          <div className="max-w-2xl lg:col-span-6 xl:col-span-7">
             <h1 className="text-balance text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl lg:text-6xl">
               {t('landing.hero_title')}
             </h1>
@@ -249,7 +252,7 @@ export default function Landing() {
       </div>
 
       <section id="models" className="border-t border-zinc-100 bg-zinc-50/40 py-14 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className={LANDING_CONTENT_COLUMN_CLASS}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{t('landing.explorer_title')}</h2>
@@ -299,7 +302,7 @@ export default function Landing() {
                   return (
                     <div
                       key={m.id}
-                      className="group flex min-h-[220px] flex-col rounded-xl border border-gray-100 bg-white p-3 transition-all duration-200 hover:border-zinc-300"
+                      className={MODEL_CARD_SHELL}
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -403,7 +406,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+      <section className={`${LANDING_CONTENT_COLUMN_CLASS} py-16`}>
         <div className={cn('rounded-2xl border px-6 py-12 text-center sm:px-12', 'border-purple-100 bg-gradient-to-br from-purple-50 to-white')}>
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{t('landing.bottom_title')}</h2>
           <p className="mx-auto mt-3 max-w-3xl text-balance text-zinc-600">{t('landing.bottom_desc')}</p>
