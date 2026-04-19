@@ -13,6 +13,7 @@ use unigateway_sdk::host::{
     dispatch_request, HostContext, HostDispatchOutcome, HostDispatchTarget, HostError,
     HostProtocol, HostRequest,
 };
+use unigateway_sdk::host::status::status_for_host_error;
 use unigateway_sdk::protocol::{ProtocolHttpResponse, ProtocolResponseBody};
 
 use crate::auth::keys::AuthenticatedUser;
@@ -44,27 +45,9 @@ fn into_axum_response(response: ProtocolHttpResponse) -> Response {
 }
 
 /// Convert HostError into an appropriate HTTP Response.
+/// Uses UniGateway SDK's official status mapping to ensure semantic alignment.
 fn error_response_for_host_error(err: &HostError) -> Response {
-    let status = match err {
-        HostError::InvalidDispatchRequest { .. } => StatusCode::BAD_REQUEST,
-        HostError::PoolLookup(_) => StatusCode::BAD_GATEWAY,
-        HostError::Targeting(_) => StatusCode::BAD_REQUEST,
-        HostError::CoreInvalidRequest(_) => StatusCode::BAD_REQUEST,
-        HostError::CorePoolNotFound(_) => StatusCode::NOT_FOUND,
-        HostError::CoreEndpointNotFound(_) => StatusCode::NOT_FOUND,
-        HostError::CoreBuild(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        HostError::CoreAllEndpointsSaturated { .. } => StatusCode::SERVICE_UNAVAILABLE,
-        HostError::CoreNoAvailableEndpoint { .. } => StatusCode::SERVICE_UNAVAILABLE,
-        HostError::CoreUpstreamHttp { status, .. } => {
-            StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY)
-        }
-        HostError::CoreTransport { .. } => StatusCode::BAD_GATEWAY,
-        HostError::CoreStreamAborted { .. } => StatusCode::BAD_GATEWAY,
-        HostError::CoreNotImplemented(_) => StatusCode::NOT_IMPLEMENTED,
-        HostError::CoreAllAttemptsFailed { .. } => StatusCode::BAD_GATEWAY,
-        _ => StatusCode::INTERNAL_SERVER_ERROR,
-    };
-
+    let status = status_for_host_error(err);
     let error_body = serde_json::json!({
         "error": {
             "message": err.to_string()

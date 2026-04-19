@@ -37,7 +37,10 @@ impl GatewayHooks for ParaRouterHooks {
             let completion_tokens = report.usage.as_ref().and_then(|u| u.output_tokens).unwrap_or(0) as i32;
             let tokens = report.usage.as_ref().and_then(|u| u.total_tokens).unwrap_or(0) as i32;
             let latency = report.latency_ms as i32;
-            let status = 200; // unigateway_core RequestReport only emits for success paths right now, or errors surface differently
+            // UniGateway only emits RequestReport for success paths currently.
+            // If this changes in the future to include error paths, this should
+            // be updated to use the actual response status.
+            let status = 200;
             
             let mut cost = "0.0".to_string();
             
