@@ -67,7 +67,7 @@ export default function ModelProvidersView() {
   };
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('modelproviders.model_providers')}</h1>

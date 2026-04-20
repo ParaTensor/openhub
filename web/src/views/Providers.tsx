@@ -400,7 +400,7 @@ export default function ProvidersView() {
                           )}
                         </div>
                       </div>
-                      {formData.keys.length > 1 && (
+                      {(isEditing || formData.keys.length > 1) && (
                         <button
                           type="button"
                           onClick={() => {

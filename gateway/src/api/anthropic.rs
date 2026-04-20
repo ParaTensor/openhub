@@ -59,6 +59,8 @@ pub async fn messages(
     State(runtime): State<Arc<ParaRouterRuntime>>,
     Json(permissive_request): Json<PermissiveAnthropicRequest>,
 ) -> Response {
+    tracing::info!("Anthropic /v1/messages handler invoked for model: {}", permissive_request.model);
+    tracing::debug!("Auth user: key_id={}, uid={}", auth.key_id, auth.uid);
     let provider_hint = permissive_request
         .pararouter_provider_account_id
         .as_ref()
