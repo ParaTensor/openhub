@@ -37,7 +37,14 @@ impl FromRequestParts<Arc<ParaRouterRuntime>> for AuthenticatedUser {
             .and_then(|h| h.to_str().ok())
             .unwrap_or_default();
 
+        // Debug logging for auth issues
+        tracing::debug!("Auth header received: {}", if auth_header.is_empty() { "<empty>" } else { "<present>" });
+        if !auth_header.is_empty() {
+            tracing::debug!("Auth header prefix: {}", &auth_header[..auth_header.len().min(20)]);
+        }
+
         if !auth_header.starts_with("Bearer ") {
+            tracing::warn!("Invalid auth header format: does not start with 'Bearer '");
             return Err(unauthorized_response("Missing or invalid Bearer token"));
         }
 
