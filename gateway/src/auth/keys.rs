@@ -31,24 +31,36 @@ impl FromRequestParts<Arc<ParaRouterRuntime>> for AuthenticatedUser {
         parts: &mut Parts,
         state: &Arc<ParaRouterRuntime>,
     ) -> std::result::Result<Self, Self::Rejection> {
+        // Try Authorization: Bearer <token> first (OpenAI standard)
         let auth_header = parts
             .headers
             .get(axum::http::header::AUTHORIZATION)
             .and_then(|h| h.to_str().ok())
             .unwrap_or_default();
 
-        // Debug logging for auth issues
-        tracing::debug!("Auth header received: {}", if auth_header.is_empty() { "<empty>" } else { "<present>" });
-        if !auth_header.is_empty() {
-            tracing::debug!("Auth header prefix: {}", &auth_header[..auth_header.len().min(20)]);
-        }
+        // Fallback to x-api-key (Anthropic standard)
+        let api_key_header = parts
+            .headers
+            .get("x-api-key")
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or_default();
 
-        if !auth_header.starts_with("Bearer ") {
-            tracing::warn!("Invalid auth header format: does not start with 'Bearer '");
+        tracing::debug!(
+            "Auth headers: Authorization={}, x-api-key={}",
+            if auth_header.is_empty() { "<empty>" } else { "<present>" },
+            if api_key_header.is_empty() { "<empty>" } else { "<present>" }
+        );
+
+        let token = if auth_header.starts_with("Bearer ") {
+            auth_header["Bearer ".len()..].trim().to_string()
+        } else if !api_key_header.is_empty() {
+            api_key_header.trim().to_string()
+        } else {
+            tracing::warn!("No valid auth header found (neither Authorization: Bearer nor x-api-key)");
             return Err(unauthorized_response("Missing or invalid Bearer token"));
-        }
+        };
 
-        let token = auth_header["Bearer ".len()..].trim();
+        let token = token.as_str();
 
         // Perform the lookup directly in the gateway
         let user = lookup_user_api_key(state, token).await.map_err(|e| {
