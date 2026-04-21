@@ -1,23 +1,33 @@
 import React from 'react';
-import Navbar from './components/Navbar';
-import ModelsView from './views/Models';
-import KeysView from './views/Keys';
-import SettingsView from './views/Settings';
-import ChatView from './views/Chat';
-import DocsView from './views/Docs';
-import InsightsView from './views/Insights';
-import PricingView from './views/Pricing';
-import ProvidersView from './views/Providers';
-import ModelProvidersView from './views/ModelProviders';
-import GlobalModelsView from './views/GlobalModels';
-import LoginView from './views/Login';
 import LandingView from './views/Landing';
-import CustomersView from './views/Customers';
-import {motion} from 'motion/react';
 import {Link, Navigate, Route, Routes, useLocation} from 'react-router-dom';
 import {APP_SHELL_MAX_CLASS, APP_SHELL_PAD_CLASS} from './lib/appShellLayout';
 import {isAuthenticated} from './lib/session';
 import {useTranslation} from 'react-i18next';
+
+const LoginView = React.lazy(() => import('./views/Login'));
+const Navbar = React.lazy(() => import('./components/Navbar'));
+const ModelsView = React.lazy(() => import('./views/Models'));
+const KeysView = React.lazy(() => import('./views/Keys'));
+const SettingsView = React.lazy(() => import('./views/Settings'));
+const ChatView = React.lazy(() => import('./views/Chat'));
+const DocsView = React.lazy(() => import('./views/Docs'));
+const InsightsView = React.lazy(() => import('./views/Insights'));
+const PricingView = React.lazy(() => import('./views/Pricing'));
+const ProvidersView = React.lazy(() => import('./views/Providers'));
+const ModelProvidersView = React.lazy(() => import('./views/ModelProviders'));
+const GlobalModelsView = React.lazy(() => import('./views/GlobalModels'));
+const CustomersView = React.lazy(() => import('./views/Customers'));
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[40vh] flex-1 items-center justify-center px-6 py-12">
+      <div className="h-2 w-full max-w-40 overflow-hidden rounded-full bg-zinc-200">
+        <div className="h-full w-1/2 animate-pulse rounded-full bg-zinc-900" />
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const {t} = useTranslation();
@@ -38,7 +48,11 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-100 font-sans text-black selection:bg-purple-600 selection:text-white">
-      {showShell && <Navbar />}
+      {showShell && (
+        <React.Suspense fallback={<div className="h-14 border-b border-zinc-100 bg-white/95" />}>
+          <Navbar />
+        </React.Suspense>
+      )}
 
       <main className="flex-1 flex flex-col min-w-0">
         <div
@@ -52,42 +66,41 @@ export default function App() {
                   : ''
           }
         >
-          <motion.div
+          <div
             key={`${location.pathname}:${authVersion}`}
-            initial={{opacity: 0, y: 8}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.2, ease: 'easeOut'}}
             className="flex-1 flex flex-col w-full min-w-0"
           >
-            <Routes location={location}>
-              <Route path="/login" element={authed ? <Navigate to="/models" replace /> : <LoginView />} />
-              <Route path="/" element={authed ? <Navigate to="/models" replace /> : <LandingView />} />
-              <Route path="/models" element={authed ? <ModelsView /> : <Navigate to="/login" replace />} />
-              <Route path="/insights" element={authed ? <InsightsView /> : <Navigate to="/login" replace />} />
-              <Route
-                path="/rankings"
-                element={authed ? <Navigate to="/insights" replace /> : <Navigate to="/login" replace />}
-              />
-              <Route
-                path="/activity"
-                element={authed ? <Navigate to="/insights?tab=activity" replace /> : <Navigate to="/login" replace />}
-              />
-              <Route path="/pricing" element={authed ? <PricingView /> : <Navigate to="/login" replace />} />
-              <Route path="/providers" element={authed ? <ProvidersView /> : <Navigate to="/login" replace />} />
-              <Route path="/models/:modelId/providers" element={authed ? <ModelProvidersView /> : <Navigate to="/login" replace />} />
-              <Route path="/global-models" element={authed ? <GlobalModelsView /> : <Navigate to="/login" replace />} />
-              <Route path="/chat" element={authed ? <ChatView /> : <Navigate to="/login" replace />} />
-              <Route path="/docs" element={authed ? <DocsView /> : <Navigate to="/login" replace />} />
-              <Route
-                path="/hub"
-                element={authed ? <Navigate to="/models" replace /> : <Navigate to="/login" replace />}
-              />
-              <Route path="/keys" element={authed ? <KeysView /> : <Navigate to="/login" replace />} />
-              <Route path="/settings" element={authed ? <SettingsView /> : <Navigate to="/login" replace />} />
-              <Route path="/customers" element={authed ? <CustomersView /> : <Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
-            </Routes>
-          </motion.div>
+            <React.Suspense fallback={<RouteFallback />}>
+              <Routes location={location}>
+                <Route path="/login" element={authed ? <Navigate to="/models" replace /> : <LoginView />} />
+                <Route path="/" element={authed ? <Navigate to="/models" replace /> : <LandingView />} />
+                <Route path="/models" element={authed ? <ModelsView /> : <Navigate to="/login" replace />} />
+                <Route path="/insights" element={authed ? <InsightsView /> : <Navigate to="/login" replace />} />
+                <Route
+                  path="/rankings"
+                  element={authed ? <Navigate to="/insights" replace /> : <Navigate to="/login" replace />}
+                />
+                <Route
+                  path="/activity"
+                  element={authed ? <Navigate to="/insights?tab=activity" replace /> : <Navigate to="/login" replace />}
+                />
+                <Route path="/pricing" element={authed ? <PricingView /> : <Navigate to="/login" replace />} />
+                <Route path="/providers" element={authed ? <ProvidersView /> : <Navigate to="/login" replace />} />
+                <Route path="/models/:modelId/providers" element={authed ? <ModelProvidersView /> : <Navigate to="/login" replace />} />
+                <Route path="/global-models" element={authed ? <GlobalModelsView /> : <Navigate to="/login" replace />} />
+                <Route path="/chat" element={authed ? <ChatView /> : <Navigate to="/login" replace />} />
+                <Route path="/docs" element={authed ? <DocsView /> : <Navigate to="/login" replace />} />
+                <Route
+                  path="/hub"
+                  element={authed ? <Navigate to="/models" replace /> : <Navigate to="/login" replace />}
+                />
+                <Route path="/keys" element={authed ? <KeysView /> : <Navigate to="/login" replace />} />
+                <Route path="/settings" element={authed ? <SettingsView /> : <Navigate to="/login" replace />} />
+                <Route path="/customers" element={authed ? <CustomersView /> : <Navigate to="/login" replace />} />
+                <Route path="*" element={<Navigate to={authed ? '/models' : '/login'} replace />} />
+              </Routes>
+            </React.Suspense>
+          </div>
         </div>
       </main>
 

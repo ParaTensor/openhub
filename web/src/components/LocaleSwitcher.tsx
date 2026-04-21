@@ -2,6 +2,7 @@ import React from 'react';
 import {Check, ChevronDown, Globe} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {cn} from '../lib/utils';
+import {changeAppLanguage} from '../i18n';
 
 const LOCALE_OPTIONS = [
   {code: 'en' as const, label: 'English'},
@@ -77,7 +78,7 @@ export default function LocaleSwitcher({className}: LocaleSwitcherProps) {
                 aria-selected={code === activeLocale}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-zinc-700 hover:bg-zinc-50"
                 onClick={() => {
-                  void i18n.changeLanguage(code);
+                  void changeAppLanguage(code);
                   setOpen(false);
                 }}
               >

@@ -153,7 +153,7 @@ export default function ProvidersView() {
             <Cpu size={32} />
           </div>
           <h3 className="text-zinc-900 font-semibold text-lg">{t('providers.no_providers_yet')}</h3>
-          <p className="text-zinc-500 mt-1 max-w-sm">{t('providers.add_your_first_llm_provider_to')}</p>
+          <p className="text-zinc-500 mt-1 max-w-2xl text-balance">{t('providers.add_your_first_llm_provider_to')}</p>
           <button
             onClick={() => handleOpenModal()}
             className="mt-6 text-zinc-900 font-bold hover:underline"

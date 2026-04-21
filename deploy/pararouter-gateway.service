@@ -4,9 +4,9 @@ After=network.target pararouter-hub.service
 
 [Service]
 Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/pararouter/gateway
-ExecStart=/home/ubuntu/pararouter/gateway/bin/gateway
+User=__SERVICE_USER__
+WorkingDirectory=__PROJECT_DIR__/gateway
+ExecStart=__PROJECT_DIR__/gateway/bin/gateway
 Restart=always
 RestartSec=3
 Environment=RUST_LOG=info

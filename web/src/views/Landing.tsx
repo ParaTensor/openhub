@@ -1,123 +1,76 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React from 'react';
 import {Link} from 'react-router-dom';
-import {ArrowRight, Code2, Globe, Search, Zap} from 'lucide-react';
+import {ArrowRight, Code2} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {cn} from '../lib/utils';
 import LocaleSwitcher from '../components/LocaleSwitcher';
-import {apiGet} from '../lib/api';
-import {sortByNameThenId} from '../lib/modelSort';
 import {APP_SHELL_MAX_CLASS, APP_SHELL_PAD_CLASS, LANDING_CONTENT_COLUMN_CLASS} from '../lib/appShellLayout';
-import {MODEL_CARD_GRID, MODEL_CARD_SHELL} from '../lib/modelCardShell';
+
+const LandingCatalogSection = React.lazy(() => import('./landing/LandingCatalogSection'));
 
 const accent = 'text-purple-600';
 const accentBg = 'bg-purple-600 hover:bg-purple-500';
 
-type PublicGlobalModel = {
-  id: string;
-  name: string;
-  description?: string;
-  context_length: number | null;
-  global_pricing?: {
-    prompt?: number;
-    completion?: number;
-    cache_read?: number;
-    cache_write?: number;
-    reasoning?: number;
-  } | null;
-};
-
-type RoutedRow = {id: string; name: string; provider?: string};
-
-function orderRegistryLikeModelsPage(registry: PublicGlobalModel[], routed: RoutedRow[]) {
-  if (!registry.length) return [];
-  if (!routed.length) return sortByNameThenId(registry);
-  const sortedRouted = sortByNameThenId(routed);
-  const routedIdsOrdered: string[] = [];
-  const seen = new Set<string>();
-  for (const m of sortedRouted) {
-    if (!seen.has(m.id)) {
-      seen.add(m.id);
-      routedIdsOrdered.push(m.id);
-    }
-  }
-  const catalogOnly = registry.filter((r) => r.id && !seen.has(r.id));
-  const sortedCatalog = sortByNameThenId(catalogOnly);
-  const byId = new Map(registry.map((r) => [r.id, r]));
-  return [...routedIdsOrdered, ...sortedCatalog.map((r) => r.id)]
-    .map((id) => byId.get(id))
-    .filter((r): r is PublicGlobalModel => r != null);
-}
-
-function fmtUsdShort(v: unknown): string {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
-  return `$${v.toFixed(2)}`;
-}
-
-function contextShort(cl: number | null): string {
-  if (cl == null || cl <= 0) return '';
-  return cl >= 1000 ? `${Math.round(cl / 1000)}K` : String(cl);
+function CatalogSectionFallback() {
+  return (
+    <section id="models" className="border-t border-zinc-100 bg-zinc-50/40 py-14 sm:py-16">
+      <div className={LANDING_CONTENT_COLUMN_CLASS}>
+        <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-16 shadow-sm">
+          <div className="h-7 w-48 animate-pulse rounded bg-zinc-200" />
+          <div className="mt-3 h-4 w-full max-w-2xl animate-pulse rounded bg-zinc-100" />
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({length: 4}).map((_, index) => (
+              <div key={index} className="rounded-xl border border-zinc-100 p-4">
+                <div className="h-4 w-2/3 animate-pulse rounded bg-zinc-200" />
+                <div className="mt-3 h-3 w-full animate-pulse rounded bg-zinc-100" />
+                <div className="mt-2 h-3 w-5/6 animate-pulse rounded bg-zinc-100" />
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="h-14 animate-pulse rounded bg-zinc-50" />
+                  <div className="h-14 animate-pulse rounded bg-zinc-50" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function Landing() {
   const {t} = useTranslation();
-  const [catalog, setCatalog] = useState<PublicGlobalModel[]>([]);
-  const [routedSnapshot, setRoutedSnapshot] = useState<RoutedRow[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState(false);
-  const [catalogSearch, setCatalogSearch] = useState('');
+  const catalogLoadRef = React.useRef<HTMLDivElement | null>(null);
+  const [shouldLoadCatalogSection, setShouldLoadCatalogSection] = React.useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [reg, routed] = await Promise.all([
-          apiGet<PublicGlobalModel[]>('/api/llm-models'),
-          apiGet<RoutedRow[]>('/api/models').catch(() => [] as RoutedRow[]),
-        ]);
-        if (!cancelled) {
-          if (Array.isArray(reg)) setCatalog(reg);
-          if (Array.isArray(routed)) setRoutedSnapshot(routed);
-        }
-      } catch {
-        if (!cancelled) {
-          setCatalogError(true);
-          setCatalog([]);
-          setRoutedSnapshot([]);
-        }
-      } finally {
-        if (!cancelled) setCatalogLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const catalogOrdered = useMemo(
-    () => orderRegistryLikeModelsPage(catalog, routedSnapshot),
-    [catalog, routedSnapshot],
-  );
-
-  const filteredCatalog = useMemo(() => {
-    const q = catalogSearch.trim().toLowerCase();
-    const list = !q
-      ? catalogOrdered
-      : catalogOrdered.filter((m) => `${m.name} ${m.id}`.toLowerCase().includes(q));
-    return list;
-  }, [catalogOrdered, catalogSearch]);
-
-  const routedIdSet = useMemo(() => new Set(routedSnapshot.map((r) => r.id)), [routedSnapshot]);
-
-  const routedProviderById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of routedSnapshot) {
-      const p = typeof r.provider === 'string' ? r.provider.trim() : '';
-      if (p && !map.has(r.id)) map.set(r.id, p);
+  React.useEffect(() => {
+    if (shouldLoadCatalogSection) {
+      return;
     }
-    return map;
-  }, [routedSnapshot]);
 
-  const gridClass = MODEL_CARD_GRID;
+    const node = catalogLoadRef.current;
+    if (!node || typeof window === 'undefined') {
+      setShouldLoadCatalogSection(true);
+      return;
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoadCatalogSection(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoadCatalogSection(true);
+          observer.disconnect();
+        }
+      },
+      {rootMargin: '240px 0px'},
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldLoadCatalogSection]);
 
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
@@ -251,160 +204,11 @@ export default function Landing() {
         </div>
       </div>
 
-      <section id="models" className="border-t border-zinc-100 bg-zinc-50/40 py-14 sm:py-16">
-        <div className={LANDING_CONTENT_COLUMN_CLASS}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{t('landing.explorer_title')}</h2>
-              <p className="mt-2 max-w-2xl text-sm text-zinc-600 sm:text-base">{t('landing.explorer_subtitle')}</p>
-            </div>
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden />
-              <input
-                type="search"
-                value={catalogSearch}
-                onChange={(e) => setCatalogSearch(e.target.value)}
-                placeholder={t('models.placeholder_search')}
-                className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 shadow-sm outline-none ring-zinc-900/5 placeholder:text-zinc-400 focus:border-purple-300 focus:ring-4 focus:ring-purple-100"
-              />
-            </div>
-          </div>
-
-          <div className="mt-8">
-            {catalogLoading ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-16 text-center text-sm text-zinc-500 shadow-sm">
-                {t('landing.models_loading')}
-              </div>
-            ) : catalogError ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-16 text-center text-sm text-red-600 shadow-sm">
-                {t('landing.models_error')}
-              </div>
-            ) : filteredCatalog.length === 0 ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-16 text-center text-sm text-zinc-500 shadow-sm">
-                {t('landing.models_empty')}
-              </div>
-            ) : (
-              <div className={gridClass}>
-                {filteredCatalog.map((m) => {
-                  const gp = m.global_pricing || {};
-                  const isRouted = routedIdSet.has(m.id);
-                  const providerLine = isRouted
-                    ? routedProviderById.get(m.id) || t('landing.model_provider_routed')
-                    : t('models.catalog_no_provider');
-                  const ctx = contextShort(m.context_length);
-                  const desc = t(`models.descriptions.${m.id}`, {
-                    defaultValue: m.description || '',
-                  });
-                  const cacheRead = fmtUsdShort(gp.cache_read);
-                  const reasoning = fmtUsdShort(gp.reasoning);
-                  const showExtra = cacheRead !== '—' || reasoning !== '—';
-
-                  return (
-                    <div
-                      key={m.id}
-                      className={MODEL_CARD_SHELL}
-                    >
-                      <div className="mb-2 flex items-start justify-between gap-2">
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-100 bg-zinc-50 text-sm font-bold text-zinc-400">
-                            {isRouted ? (
-                              <span className="leading-none">{providerLine ? providerLine[0] : '?'}</span>
-                            ) : (
-                              <Globe className="h-4 w-4 text-zinc-400" aria-hidden />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="flex flex-col gap-0.5 text-sm font-bold leading-snug text-zinc-900">
-                              <span className="line-clamp-2">{m.name || m.id}</span>
-                              <span className="w-fit max-w-full truncate rounded border border-zinc-200 bg-zinc-100 px-1 py-0.5 font-mono text-[10px] text-zinc-500">
-                                {m.id}
-                              </span>
-                            </h3>
-                            <p className="mt-0.5 truncate text-[11px] font-medium text-zinc-400">{providerLine}</p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 flex-col items-end gap-0.5">
-                          {!isRouted && (
-                            <span className="rounded border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-800">
-                              {t('models.catalog_badge')}
-                            </span>
-                          )}
-                          {ctx ? (
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300">{ctx}</span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {desc ? (
-                        <p className="mb-3 line-clamp-3 flex-grow text-xs leading-relaxed text-zinc-500">{desc}</p>
-                      ) : (
-                        <div className="mb-3 flex-grow" />
-                      )}
-
-                      <div className="mb-2 grid grid-cols-2 gap-1.5">
-                        <div className="rounded-lg border border-gray-50 bg-zinc-50/50 p-2">
-                          <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
-                            {t('models.prompt')}
-                          </p>
-                          <p className="truncate font-mono text-[11px] font-semibold text-zinc-700">
-                            {fmtUsdShort(gp.prompt)}
-                            <span className="ml-0.5 text-[9px] font-normal text-zinc-400">/1M</span>
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-gray-50 bg-zinc-50/50 p-2">
-                          <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
-                            {t('models.completion')}
-                          </p>
-                          <p className="truncate font-mono text-[11px] font-semibold text-zinc-700">
-                            {fmtUsdShort(gp.completion)}
-                            <span className="ml-0.5 text-[9px] font-normal text-zinc-400">/1M</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      {showExtra ? (
-                        <div className="mb-2 grid grid-cols-2 gap-1.5 border-t border-gray-50/50 pt-1">
-                          {cacheRead !== '—' ? (
-                            <div className="rounded-lg border border-emerald-50/50 bg-emerald-50/30 p-2">
-                              <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500">
-                                {t('models.cache_hit')}
-                              </p>
-                              <p className="truncate font-mono text-[11px] font-semibold text-emerald-700">{cacheRead}</p>
-                            </div>
-                          ) : (
-                            <div />
-                          )}
-                          {reasoning !== '—' ? (
-                            <div className="rounded-lg border border-indigo-50/50 bg-indigo-50/30 p-2">
-                              <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-500">
-                                {t('models.reasoning')}
-                              </p>
-                              <p className="truncate font-mono text-[11px] font-semibold text-indigo-700">{reasoning}</p>
-                            </div>
-                          ) : (
-                            <div />
-                          )}
-                        </div>
-                      ) : null}
-
-                      <div className="mt-auto flex items-center gap-1 border-t border-gray-50 pt-2 text-[10px] font-medium text-zinc-400">
-                        {isRouted ? (
-                          <>
-                            <Zap size={10} className="shrink-0 text-emerald-500" aria-hidden />
-                            <span className="min-w-0 truncate">{t('landing.model_footer_routed')}</span>
-                          </>
-                        ) : (
-                          <span className="min-w-0 truncate">{t('models.catalog_latency_hint')}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <div ref={catalogLoadRef}>
+        <React.Suspense fallback={<CatalogSectionFallback />}>
+          {shouldLoadCatalogSection ? <LandingCatalogSection /> : <CatalogSectionFallback />}
+        </React.Suspense>
+      </div>
 
       <section className={`${LANDING_CONTENT_COLUMN_CLASS} py-16`}>
         <div className={cn('rounded-2xl border px-6 py-12 text-center sm:px-12', 'border-purple-100 bg-gradient-to-br from-purple-50 to-white')}>

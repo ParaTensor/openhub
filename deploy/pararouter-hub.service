@@ -4,12 +4,12 @@ After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/pararouter
+User=__SERVICE_USER__
+WorkingDirectory=__PROJECT_DIR__
 ExecStart=/usr/bin/npm run dev -w @pararouter/hub
 Restart=always
 RestartSec=3
-EnvironmentFile=-/home/ubuntu/.pararouter.env
+EnvironmentFile=-__SERVICE_HOME__/.pararouter.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=DATABASE_URL=postgres://xinference:password@localhost:5432/pararouter

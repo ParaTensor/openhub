@@ -2,6 +2,8 @@
 set -e
 
 # Configuration
+SERVICE_USER="$(id -un)"
+SERVICE_HOME="$HOME"
 PROJECT_DIR="$HOME/pararouter"
 HUB_SERVICE="pararouter-hub"
 GATEWAY_SERVICE="pararouter-gateway"
@@ -108,6 +110,12 @@ npm config set registry https://registry.npmmirror.com/
 npm install
 npm run build -w @pararouter/web
 
+echo "Publishing frontend bundle to nginx web root..."
+sudo mkdir -p /var/www/pararouter
+sudo rm -rf /var/www/pararouter/*
+sudo cp -R $PROJECT_DIR/dist/. /var/www/pararouter/
+sudo chmod -R a+rX /var/www/pararouter
+
 # 7. Build Gateway (Rust)
 echo "Building Gateway (this may take a few minutes)..."
 cd $PROJECT_DIR/gateway
@@ -122,14 +130,39 @@ rm -rf ~/.cargo/registry/
 
 # 8. Install service files and fix ownership
 echo "Configuring Systemd Services..."
-sudo cp $PROJECT_DIR/deploy/pararouter-hub.service /etc/systemd/system/pararouter-hub.service
-sudo cp $PROJECT_DIR/deploy/pararouter-gateway.service /etc/systemd/system/pararouter-gateway.service
+sed \
+    -e "s|__SERVICE_USER__|$SERVICE_USER|g" \
+    -e "s|__SERVICE_HOME__|$SERVICE_HOME|g" \
+    -e "s|__PROJECT_DIR__|$PROJECT_DIR|g" \
+    "$PROJECT_DIR/deploy/pararouter-hub.service" | sudo tee /etc/systemd/system/pararouter-hub.service >/dev/null
+sed \
+    -e "s|__SERVICE_USER__|$SERVICE_USER|g" \
+    -e "s|__SERVICE_HOME__|$SERVICE_HOME|g" \
+    -e "s|__PROJECT_DIR__|$PROJECT_DIR|g" \
+    "$PROJECT_DIR/deploy/pararouter-gateway.service" | sudo tee /etc/systemd/system/pararouter-gateway.service >/dev/null
+
+sudo mkdir -p /etc/ssl/pararouter
+if sudo test -f /etc/letsencrypt/live/pararouter.com/fullchain.pem && sudo test -f /etc/letsencrypt/live/pararouter.com/privkey.pem; then
+    echo "Using Let's Encrypt origin TLS certificate for nginx..."
+    sudo ln -sf /etc/letsencrypt/live/pararouter.com/fullchain.pem /etc/ssl/pararouter/origin.crt
+    sudo ln -sf /etc/letsencrypt/live/pararouter.com/privkey.pem /etc/ssl/pararouter/origin.key
+elif ! sudo test -f /etc/ssl/pararouter/origin.crt || ! sudo test -f /etc/ssl/pararouter/origin.key; then
+    echo "Provisioning fallback self-signed origin TLS certificate for nginx..."
+    sudo openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+        -keyout /etc/ssl/pararouter/origin.key \
+        -out /etc/ssl/pararouter/origin.crt \
+        -subj "/CN=pararouter.com"
+fi
+sudo chmod 600 /etc/ssl/pararouter/origin.key
+sudo chmod 644 /etc/ssl/pararouter/origin.crt
+
 sudo cp $PROJECT_DIR/deploy/nginx/pararouter.conf /etc/nginx/conf.d/pararouter.conf || true
+sudo rm -f /etc/nginx/sites-enabled/default || true
 sudo systemctl daemon-reload
 
 sudo chown -R $USER:$USER $PROJECT_DIR
 
-# 8.5 Install Cloudflare Tunnel
+# 8.5 Optional Cloudflare Tunnel (disabled by default for direct-origin deployments)
 if [ -n "$TUNNEL_TOKEN" ]; then
     echo "Installing Cloudflare Tunnel (cloudflared)..."
     

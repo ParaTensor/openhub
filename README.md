@@ -35,3 +35,19 @@ Build and preview the frontend dashboard:
 npm run build
 npm run preview
 ```
+
+## Production Routing
+
+For production, serve the built frontend bundle from nginx and proxy only the dynamic paths:
+
+- `/` and SPA routes: static files from the Vite build output
+- `/api/*`: Hub (Node.js control plane)
+- `/v1/*`: Gateway (Rust data plane)
+
+The frontend already supports an external API origin via `VITE_API_BASE_URL`. This makes it straightforward to split the public website and API onto separate domains, for example:
+
+- `pararouter.com`: static site and console shell
+- `api.pararouter.com`: Hub and Gateway entrypoints
+- `cn.pararouter.com`: China-optimized static entry routed to a nearby POP
+
+This split reduces homepage TTFB by avoiding the Node.js hop for static assets and gives you a clean path to region-specific DNS or reverse-proxy routing later.

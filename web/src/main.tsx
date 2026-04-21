@@ -3,12 +3,18 @@ import {createRoot} from 'react-dom/client';
 import {BrowserRouter} from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
-import './i18n';
+import {initI18n} from './i18n';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-);
+async function bootstrap() {
+  await initI18n();
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  );
+}
+
+void bootstrap();
