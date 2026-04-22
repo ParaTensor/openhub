@@ -18,6 +18,45 @@ const router = Router();
 
 router.use(requireRole('admin'));
 
+router.post('/', async (req, res) => {
+  const rawId = String(req.body?.id ?? '').trim();
+  const name = String(req.body?.name ?? '').trim();
+  const description =
+    typeof req.body?.description === 'string' ? req.body.description : '';
+  const {context_length, global_pricing} = req.body;
+
+  if (!rawId) return res.status(400).json({error: 'id required'});
+  if (!name) return res.status(400).json({error: 'name required'});
+
+  const rawCtx =
+    context_length === null || context_length === undefined || context_length === ''
+      ? null
+      : Number(context_length);
+  const ctx = rawCtx !== null && Number.isFinite(rawCtx) ? rawCtx : null;
+
+  try {
+    await pool.query(
+      `INSERT INTO llm_models (id, name, description, context_length, global_pricing, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6)`,
+      [
+        rawId,
+        name,
+        description,
+        ctx,
+        JSON.stringify(global_pricing && typeof global_pricing === 'object' ? global_pricing : {}),
+        Date.now(),
+      ],
+    );
+    res.status(201).json({status: 'created', id: rawId});
+  } catch (e: any) {
+    if (e?.code === '23505') {
+      return res.status(409).json({error: 'Model id already exists'});
+    }
+    console.error('POST /api/llm-models:', e);
+    res.status(500).json({error: String(e?.message || e)});
+  }
+});
+
 router.put('/:id', async (req, res) => {
   const id = String(req.params.id || '').trim();
   const { name, description, context_length, global_pricing } = req.body;

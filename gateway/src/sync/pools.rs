@@ -2,10 +2,28 @@ use std::collections::HashMap;
 
 use sqlx::{Pool, Postgres};
 use tracing::{info, warn};
+use url::Url;
 use unigateway_sdk::core::{
     Endpoint, LoadBalancingStrategy, ModelPolicy, ProviderKind, ProviderPool, RetryPolicy,
     SecretString, UniGatewayEngine,
 };
+
+fn normalize_base_url(base_url: &str, provider_kind: &ProviderKind) -> String {
+    if !matches!(provider_kind, ProviderKind::OpenAiCompatible) {
+        return base_url.to_string();
+    }
+
+    let Ok(mut parsed) = Url::parse(base_url) else {
+        return base_url.to_string();
+    };
+
+    if parsed.path().is_empty() || parsed.path() == "/" {
+        parsed.set_path("/v1");
+        return parsed.to_string();
+    }
+
+    base_url.to_string()
+}
 
 pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> anyhow::Result<()> {
     #[derive(sqlx::FromRow)]
@@ -53,6 +71,13 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
 
     info!("Pool sync: found {} active provider API keys", keys.len());
 
+    let current_version = sqlx::query_scalar::<_, String>(
+        "SELECT current_version FROM pricing_state WHERE id = 1",
+    )
+    .fetch_optional(db)
+    .await?
+    .unwrap_or_else(|| "bootstrap".to_string());
+
     #[derive(sqlx::FromRow)]
     struct PricingMappingRow {
         model_id: String,
@@ -64,9 +89,10 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
         r#"
         SELECT model_id, provider_account_id, provider_model_id 
         FROM model_provider_pricings 
-        WHERE status = 'online'
+        WHERE version = $1 AND status = 'online'
         "#,
     )
+    .bind(&current_version)
     .fetch_all(db)
     .await?;
 
@@ -89,6 +115,7 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
                 "anthropic" => ProviderKind::Anthropic,
                 _ => ProviderKind::OpenAiCompatible,
             };
+            let normalized_base_url = normalize_base_url(&account.base_url, &provider_kind);
 
             let driver_id = match account.provider_type.as_str() {
                 "anthropic" => "anthropic",
@@ -102,7 +129,7 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
                 provider_family: Some(account.provider_type.clone()),
                 provider_kind,
                 driver_id: driver_id.to_string(),
-                base_url: account.base_url.clone(),
+                base_url: normalized_base_url,
                 api_key: SecretString::new(key.api_key),
                 model_policy: ModelPolicy {
                     default_model: None,
@@ -132,7 +159,7 @@ pub async fn load_all_pools(db: &Pool<Postgres>, engine: &UniGatewayEngine) -> a
             info!(
                 "Pool sync: registering pool '{}' ({}) with {} endpoint(s)",
                 account_id,
-                account.base_url,
+                endpoints[0].base_url,
                 endpoints.len()
             );
             let pool = ProviderPool {

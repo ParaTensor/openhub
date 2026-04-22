@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Database, Plus, RefreshCw, Save, Edit2, Check, X, Cloud } from 'lucide-react';
-import { apiGet, apiPost, apiPut } from '../lib/api';
+import { Plus, RefreshCw, Edit2 } from 'lucide-react';
+import { ApiError, apiGet, apiPost, apiPut } from '../lib/api';
 import { localUser } from '../lib/session';
 import { useTranslation } from "react-i18next";
 
@@ -24,6 +24,7 @@ export default function GlobalModelsView() {
   const [models, setModels] = useState<GlobalModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState<Partial<GlobalModel>>({});
   const [providerFilter, setProviderFilter] = useState<string>('all');
   
@@ -47,24 +48,70 @@ export default function GlobalModelsView() {
   }, []);
 
   const handleEdit = (m: GlobalModel) => {
+    setIsCreating(false);
     setEditForm({ ...m });
     setIsEditModalOpen(true);
   };
 
+  const openCreate = () => {
+    setIsCreating(true);
+    setEditForm({
+      id: '',
+      name: '',
+      description: '',
+      context_length: null,
+      global_pricing: {},
+      updated_at: Date.now(),
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const sanitizePricing = (p: GlobalModel['global_pricing'] | undefined) => {
+    const src = p || {};
+    const out: Record<string, number> = {};
+    for (const k of ['prompt', 'completion', 'cache_read', 'cache_write', 'reasoning'] as const) {
+      const v = src[k];
+      if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+    }
+    return out;
+  };
+
   const handleSave = async () => {
-    if (!editForm.id) return;
+    const id = String(editForm.id || '').trim();
+    if (!id) {
+      alert(t('globalmodels.alert_id_required'));
+      return;
+    }
+    const name = String(editForm.name || '').trim();
+    if (!name) {
+      alert(t('globalmodels.alert_name_required'));
+      return;
+    }
+    const body = {
+      name,
+      description: typeof editForm.description === 'string' ? editForm.description : '',
+      context_length:
+        editForm.context_length === null || editForm.context_length === undefined
+          ? null
+          : Number(editForm.context_length),
+      global_pricing: sanitizePricing(editForm.global_pricing),
+    };
     try {
-      await apiPut(`/api/llm-models/${encodeURIComponent(editForm.id)}`, {
-        name: editForm.name,
-        description: editForm.description,
-        context_length: editForm.context_length,
-        global_pricing: editForm.global_pricing,
-      });
+      if (isCreating) {
+        await apiPost('/api/llm-models', { id, ...body });
+      } else {
+        await apiPut(`/api/llm-models/${encodeURIComponent(id)}`, body);
+      }
       setIsEditModalOpen(false);
+      setIsCreating(false);
       loadModels();
     } catch (err) {
       console.error(err);
-      alert(t('globalmodels.alert_save_failed'));
+      if (err instanceof ApiError && err.status === 409) {
+        alert(t('globalmodels.alert_duplicate_id'));
+        return;
+      }
+      alert(isCreating ? t('globalmodels.alert_create_failed') : t('globalmodels.alert_save_failed'));
     }
   };
 
@@ -115,12 +162,24 @@ export default function GlobalModelsView() {
           <p className="text-zinc-500">
             {t('globalmodels.source_of_truth_for_all_llm_ba')}</p>
         </div>
-        <button 
-          onClick={() => setIsSyncModalOpen(true)}
-          className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <RefreshCw size={16} />
-          {t('globalmodels.sync_data')}</button>
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          <button
+            type="button"
+            onClick={openCreate}
+            className="flex items-center gap-2 bg-purple-600 text-white shadow-sm hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <Plus size={16} />
+            {t('globalmodels.add_model')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSyncModalOpen(true)}
+            className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <RefreshCw size={16} />
+            {t('globalmodels.import_from_url')}
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2.5 flex-wrap">
@@ -193,23 +252,66 @@ export default function GlobalModelsView() {
           <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
               <div>
-                <h3 className="font-bold text-lg">{t('globalmodels.edit_global_model')}</h3>
-                <p className="text-xs text-zinc-500 mt-0.5">{t('globalmodels.edit_modal_subtitle')}</p>
+                <h3 className="font-bold text-lg">
+                  {isCreating ? t('globalmodels.add_global_model') : t('globalmodels.edit_global_model')}
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {isCreating ? t('globalmodels.add_modal_subtitle') : t('globalmodels.edit_modal_subtitle')}
+                </p>
               </div>
             </div>
             <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4 md:col-span-2">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">{t('globalmodels.model_id_read_only')}</label>
-                  <div className="bg-zinc-100 text-zinc-500 px-3 py-2 rounded-lg font-mono text-sm border border-zinc-200">{editForm.id}</div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    {isCreating ? t('globalmodels.model_id') : t('globalmodels.model_id_read_only')}
+                  </label>
+                  {isCreating ? (
+                    <input
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-purple-500 transition-all"
+                      placeholder={t('globalmodels.placeholder_model_id')}
+                      value={editForm.id ?? ''}
+                      onChange={(e) => setEditForm({ ...editForm, id: e.target.value })}
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="bg-zinc-100 text-zinc-500 px-3 py-2 rounded-lg font-mono text-sm border border-zinc-200">
+                      {editForm.id}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">{t('globalmodels.display_name')}</label>
                   <input 
                     className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-purple-500 transition-all font-medium" 
-                    value={editForm.name} 
+                    value={editForm.name ?? ''} 
                     onChange={e => setEditForm({...editForm, name: e.target.value})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">{t('globalmodels.description')}</label>
+                  <textarea
+                    rows={2}
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-purple-500 transition-all resize-y min-h-[2.5rem]"
+                    value={editForm.description ?? ''}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">{t('globalmodels.context_window')}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-purple-500 transition-all"
+                    placeholder={t('globalmodels.context_window_placeholder')}
+                    value={editForm.context_length ?? ''}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        context_length: e.target.value === '' ? null : Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -276,14 +378,22 @@ export default function GlobalModelsView() {
               </div>
             </div>
             <div className="border-t px-6 py-4 bg-zinc-50/80 flex flex-col sm:flex-row sm:items-center justify-end shrink-0 gap-3">
-              <button onClick={() => setIsEditModalOpen(false)} className="text-[13px] font-bold text-zinc-500 hover:text-zinc-900 px-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setIsCreating(false);
+                }}
+                className="text-[13px] font-bold text-zinc-500 hover:text-zinc-900 px-3"
+              >
                 {t('globalmodels.cancel')}
               </button>
               <button 
+                type="button"
                 onClick={handleSave}
                 className="bg-purple-600 text-white rounded-lg px-6 py-2 text-sm font-semibold shadow-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
               >
-                {t('globalmodels.save_changes')}
+                {isCreating ? t('globalmodels.create_model') : t('globalmodels.save_changes')}
               </button>
             </div>
           </div>

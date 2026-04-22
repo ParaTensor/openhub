@@ -9,6 +9,7 @@
     "packages/*"
   ],
   "scripts": {
+    "gateway": "cargo run --manifest-path gateway/Cargo.toml",
     "dev": "npm run dev -w @pararouter/hub",
     "build": "npm run build -w @pararouter/web",
     "preview": "npm run preview -w @pararouter/web",

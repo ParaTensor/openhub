@@ -247,17 +247,28 @@ export default function KeysView() {
                     <span className="font-semibold text-gray-900">{key.name}</span>
                   </td>
                   <td className="px-6 py-4 min-w-0 align-middle">
-                    <div className="flex min-w-0 max-w-full items-center gap-2 rounded border border-gray-100 bg-gray-50 px-2 py-1 font-mono text-xs text-gray-500">
+                    <div className="flex min-w-0 max-w-full items-center gap-1 rounded border border-gray-100 bg-gray-50 px-2 py-1 font-mono text-xs text-gray-500">
                       <span className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap [scrollbar-width:thin]">
                         {showKey === key.id ? key.key : 'sk-oh-v1-••••••••••••'}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowKey(showKey === key.id ? null : key.id)}
-                        className="shrink-0 rounded p-1 transition-colors hover:bg-gray-200"
-                      >
-                        {showKey === key.id ? <EyeOff size={12} /> : <Eye size={12} />}
-                      </button>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(key.key, key.id)}
+                          className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-800"
+                          title={t('keys.copy_key')}
+                        >
+                          {copiedId === key.id ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowKey(showKey === key.id ? null : key.id)}
+                          className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-200"
+                          title={showKey === key.id ? t('keys.hide_key') : t('keys.show_key')}
+                        >
+                          {showKey === key.id ? <EyeOff size={12} /> : <Eye size={12} />}
+                        </button>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -281,13 +292,6 @@ export default function KeysView() {
                         title={t('keys.edit_key')}
                       >
                         <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(key.key, key.id)}
-                        className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
-                      >
-                        {copiedId === key.id ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                       </button>
                       <button
                         type="button"

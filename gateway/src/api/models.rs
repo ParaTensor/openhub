@@ -11,7 +11,7 @@ use crate::auth::keys::AuthenticatedUser;
 use crate::runtime::ParaRouterRuntime;
 
 pub async fn list_models(
-    _auth: AuthenticatedUser,
+    auth: AuthenticatedUser,
     State(runtime): State<Arc<ParaRouterRuntime>>,
 ) -> Response {
     let pool = &runtime.db;
@@ -21,14 +21,32 @@ pub async fn list_models(
         model_id: String,
     }
 
-    // We only list models that have an active pricing configuration
+    let current_version = match sqlx::query_scalar::<_, String>(
+        "SELECT current_version FROM pricing_state WHERE id = 1",
+    )
+    .fetch_optional(pool)
+    .await
+    {
+        Ok(version) => version.unwrap_or_else(|| "bootstrap".to_string()),
+        Err(e) => {
+            tracing::error!("Failed to fetch pricing state: {}", e);
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal Server Error",
+            )
+                .into_response();
+        }
+    };
+
     let result = sqlx::query_as::<_, ModelRow>(
         r#"
-        SELECT DISTINCT model_id 
-        FROM model_provider_pricings 
-        WHERE status = 'online'
+        SELECT DISTINCT model_id
+        FROM model_provider_pricings
+        WHERE version = $1 AND status = 'online'
+        ORDER BY model_id ASC
         "#,
     )
+    .bind(&current_version)
     .fetch_all(pool)
     .await;
 
@@ -51,6 +69,15 @@ pub async fn list_models(
 
     let data: Vec<_> = rows
         .into_iter()
+        .filter(|row| {
+            auth.user_allowed_models
+                .as_ref()
+                .is_none_or(|models| models.contains(&row.model_id))
+                && auth
+                    .key_allowed_models
+                    .as_ref()
+                    .is_none_or(|models| models.contains(&row.model_id))
+        })
         .map(|row| {
             json!({
                 "id": row.model_id,
