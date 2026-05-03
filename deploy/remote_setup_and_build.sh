@@ -124,7 +124,10 @@ cargo build --release
 # 7.1 Extract binary and reclaim disk space (CRITICAL for 10GB GCP VMs)
 echo "Extracting binary and cleaning build caches..."
 mkdir -p $PROJECT_DIR/gateway/bin
-cp target/release/gateway $PROJECT_DIR/gateway/bin/gateway
+TMP_GATEWAY_BIN="$PROJECT_DIR/gateway/bin/gateway.new"
+cp target/release/gateway "$TMP_GATEWAY_BIN"
+chmod +x "$TMP_GATEWAY_BIN"
+mv -f "$TMP_GATEWAY_BIN" "$PROJECT_DIR/gateway/bin/gateway"
 rm -rf target/
 rm -rf ~/.cargo/registry/
 
