@@ -61,12 +61,28 @@ fi
 export RUSTUP_DIST_SERVER="https://rsproxy.cn"
 export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
 
+install_rustup() {
+    if ! curl --proto '=https' --tlsv1.2 -sSf https://rsproxy.cn/rustup-init.sh | sh -s -- -y; then
+        echo "rsproxy rustup bootstrap failed, retrying with the official Rustup installer..."
+        unset RUSTUP_DIST_SERVER RUSTUP_UPDATE_ROOT
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    fi
+}
+
+update_rustup_stable() {
+    if ! rustup update stable; then
+        echo "rsproxy rustup update failed, retrying with the official Rustup servers..."
+        unset RUSTUP_DIST_SERVER RUSTUP_UPDATE_ROOT
+        rustup update stable
+    fi
+}
+
 if ! command -v rustc &> /dev/null; then
     echo "Installing Rustup..."
-    curl --proto '=https' --tlsv1.2 -sSf https://rsproxy.cn/rustup-init.sh | sh -s -- -y
+    install_rustup
     source "$HOME/.cargo/env"
 else
-    rustup update stable
+    update_rustup_stable
     rustup toolchain list | grep -v stable | xargs -I {} rustup toolchain uninstall {} || true
 fi
 
