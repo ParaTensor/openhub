@@ -28,8 +28,8 @@ if command -v yum &> /dev/null; then
     sudo yum update -y || true
     sudo yum install -y gcc gcc-c++ make pkgconfig openssl-devel curl git postgresql-server postgresql-contrib nginx
 else
-    sudo apt-get update
-    sudo apt-get install build-essential pkg-config libssl-dev curl git postgresql postgresql-contrib nginx -y
+    sudo apt-get -o DPkg::Lock::Timeout=600 update
+    sudo apt-get -o DPkg::Lock::Timeout=600 install build-essential pkg-config libssl-dev curl git postgresql postgresql-contrib nginx -y
 fi
 
 # 1.1 Initialize Database if not exists
@@ -94,7 +94,7 @@ if ! command -v node &> /dev/null; then
         sudo yum install -y nodejs
     else
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-        sudo apt-get install -y nodejs
+        sudo apt-get -o DPkg::Lock::Timeout=600 install -y nodejs
     fi
 fi
 
@@ -174,8 +174,8 @@ if [ -n "$TUNNEL_TOKEN" ]; then
         sudo mkdir -p --mode=0755 /usr/share/keyrings
         curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
         echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
-        sudo apt-get update
-        sudo apt-get install cloudflared -y
+        sudo apt-get -o DPkg::Lock::Timeout=600 update
+        sudo apt-get -o DPkg::Lock::Timeout=600 install cloudflared -y
     fi
     
     if systemctl is-active --quiet cloudflared; then
