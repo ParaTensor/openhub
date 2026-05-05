@@ -76,9 +76,29 @@ function areSupportedModelsEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
 }
 
+const providerProtocolOptions = [
+  { value: 'openai_compatible', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+];
+
+const providerSettingsGridClass = 'lg:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]';
+
+function providerProtocolLabel(driverType?: string | null) {
+  return driverType === 'anthropic' ? 'Anthropic' : 'OpenAI';
+}
+
 export default function ProvidersView() {
   const { t } = useTranslation();
   const isAdmin = localUser.role === 'admin';
+  const reasoningTextEncodingOptions = [
+    { value: '', label: t('providers.reasoning_text_encoding_none') },
+    { value: 'xml_think_tag', label: t('providers.reasoning_text_encoding_xml_think_tag') },
+  ];
+  const reasoningTextModelScopeOptions = [
+    { value: 'none', label: t('providers.reasoning_text_model_scope_none') },
+    { value: 'claude_family', label: t('providers.reasoning_text_model_scope_claude_family') },
+    { value: 'all_models', label: t('providers.reasoning_text_model_scope_all_models') },
+  ];
   const [providers, setProviders] = React.useState<ProviderRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
@@ -479,6 +499,9 @@ export default function ProvidersView() {
                 <span className="inline-flex items-center rounded border border-zinc-200/70 bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                   {p.provider}
                 </span>
+                <span className="ml-1 inline-flex items-center rounded border border-zinc-200/70 bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  {providerProtocolLabel(p.driver_type)}
+                </span>
               </div>
 
               {/* Info & Links */}
@@ -552,53 +575,109 @@ export default function ProvidersView() {
             <div className="flex-1 overflow-auto px-5 py-5 space-y-4">
 
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                {isEditing && (
+              {!isEditing && (
+                <div className="max-w-[240px] min-w-0 space-y-2">
                   <div className="min-w-0 space-y-2">
                     <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.provider_id')}</label>
                     <input
                       value={formData.provider}
                       onChange={(e) => providersEdit.setFormData({...formData, provider: e.target.value})}
                       placeholder={t('providers.placeholder_id')}
-                      disabled={isEditing}
-                      className="w-full min-w-0 px-3 py-2 border rounded-lg text-sm bg-zinc-50 focus:outline-none disabled:opacity-50"
+                      className="w-full min-w-0 px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
                     />
                   </div>
-                )}
-
-                <div className={`min-w-0 space-y-2 ${!isEditing ? 'sm:col-span-2' : ''}`}>
-                  <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.display_name')}</label>
-                  <input
-                    value={formData.label}
-                    onChange={(e) => {
-                      const label = e.target.value;
-                      if (!isEditing) {
-                        const id = label.toLowerCase().replace(/[^a-z0-9]/g, '');
-                        providersEdit.setFormData({
-                          ...formData,
-                          label,
-                          provider: id,
-                          base_url: id ? `https://api.${id}.com` : '',
-                          docs_url: id ? `https://platform.${id}.com/docs` : ''
-                        });
-                      } else {
-                        providersEdit.setFormData({...formData, label});
-                      }
-                    }}
-                    placeholder={t('providers.placeholder_display_name')}
-                    className="w-full min-w-0 px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                  />
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.base_url')}</label>
-                <input
-                  value={formData.base_url}
-                  onChange={(e) => providersEdit.setFormData({...formData, base_url: e.target.value})}
-                  placeholder={t('providers.placeholder_base_url')}
-                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-mono"
-                />
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+                <div className={`grid gap-3 ${providerSettingsGridClass}`}>
+                  <div className="min-w-0 space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.display_name')}</label>
+                    <input
+                      value={formData.label}
+                      onChange={(e) => {
+                        const label = e.target.value;
+                        if (!isEditing) {
+                          const id = label.toLowerCase().replace(/[^a-z0-9]/g, '');
+                          providersEdit.setFormData({
+                            ...formData,
+                            label,
+                            provider: id,
+                            base_url: id ? `https://api.${id}.com` : '',
+                            docs_url: id ? `https://platform.${id}.com/docs` : ''
+                          });
+                        } else {
+                          providersEdit.setFormData({...formData, label});
+                        }
+                      }}
+                      placeholder={t('providers.placeholder_display_name')}
+                      className="w-full min-w-0 px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="min-w-0 space-y-2 lg:col-span-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.base_url')}</label>
+                    <input
+                      value={formData.base_url}
+                      onChange={(e) => providersEdit.setFormData({...formData, base_url: e.target.value})}
+                      placeholder={t('providers.placeholder_base_url')}
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className={`mt-3 grid gap-3 ${providerSettingsGridClass}`}>
+                  <div className="min-w-0 space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('provideraccountmodal.protocol')}</label>
+                    <Select
+                      value={formData.driver_type || 'openai_compatible'}
+                      onChange={(value) => {
+                        providersEdit.setFormData((prev) => {
+                          const next = {...prev, driver_type: value};
+                          if (value === 'anthropic' && prev.base_url === 'https://api.openai.com') {
+                            next.base_url = 'https://api.anthropic.com';
+                            next.docs_url = 'https://docs.anthropic.com/en/api/getting-started';
+                          } else if (value === 'openai_compatible' && prev.base_url === 'https://api.anthropic.com') {
+                            next.base_url = 'https://api.openai.com';
+                            next.docs_url = 'https://platform.openai.com/docs';
+                          }
+                          return next;
+                        });
+                      }}
+                      options={providerProtocolOptions}
+                    />
+                  </div>
+
+                  <div className="min-w-0 space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.reasoning_text_encoding')}</label>
+                    <Select
+                      value={formData.reasoning_text_encoding || ''}
+                      onChange={(value) => {
+                        providersEdit.setFormData((prev) => ({
+                          ...prev,
+                          reasoning_text_encoding: value,
+                          reasoning_text_model_scope: value ? (prev.reasoning_text_model_scope || 'claude_family') : 'none',
+                        }));
+                      }}
+                      options={reasoningTextEncodingOptions}
+                      disabled={formData.driver_type !== 'openai_compatible'}
+                    />
+                  </div>
+
+                  <div className="min-w-0 space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('providers.reasoning_text_model_scope')}</label>
+                    <Select
+                      value={formData.reasoning_text_model_scope || 'none'}
+                      onChange={(value) => providersEdit.setFormData({...formData, reasoning_text_model_scope: value})}
+                      options={reasoningTextModelScopeOptions}
+                      disabled={formData.driver_type !== 'openai_compatible' || !formData.reasoning_text_encoding}
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-2 text-right text-[10px] leading-relaxed text-zinc-500">
+                  {t('providers.reasoning_text_compact_hint')}
+                </p>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-zinc-100">

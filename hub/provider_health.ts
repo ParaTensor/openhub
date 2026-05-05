@@ -4,6 +4,7 @@ import { fetchProviderSupportedModelsWithLog, sendEmail } from './utils';
 type ProviderAccountRow = {
   id: string;
   provider_type: string;
+  driver_type: string;
   base_url: string;
   label: string;
 };
@@ -361,7 +362,7 @@ async function runProbeForKey(
   missingProbeError?: string | null,
 ): Promise<ProviderHealthCheckResult> {
   const checkedAt = Date.now();
-  const providerType = String(row.provider_type || '').trim().toLowerCase();
+  const driverType = String(row.driver_type || row.provider_type || '').trim().toLowerCase();
   const probeModel = probeTarget ? (probeTarget.provider_model_id?.trim() || probeTarget.model_id) : null;
   const previousHealthStatus = String(row.health_status || 'unknown').toLowerCase();
 
@@ -405,7 +406,7 @@ async function runProbeForKey(
     };
   }
 
-  const probe = providerType === 'anthropic'
+  const probe = driverType === 'anthropic'
     ? await probeAnthropic(row.base_url, row.api_key, probeModel)
     : await probeOpenAiCompatible(row.base_url, row.api_key, probeModel);
 
@@ -495,10 +496,12 @@ export async function runProviderHealthChecks(providerAccountId?: string) {
        k.health_fail_count,
        k.health_alert_sent_at,
        a.provider_type,
+       COALESCE(NULLIF(pt.driver_type, ''), CASE WHEN a.provider_type = 'anthropic' THEN 'anthropic' ELSE 'openai_compatible' END) AS driver_type,
        a.base_url,
        a.label AS account_label
      FROM provider_api_keys k
      JOIN provider_accounts a ON a.id = k.provider_account_id
+     LEFT JOIN provider_types pt ON pt.id = a.id
      WHERE k.status = 'active'
        ${providerFilter}
      ORDER BY k.provider_account_id ASC, k.label ASC, k.id ASC`,

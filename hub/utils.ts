@@ -115,16 +115,26 @@ export function normalizeProviderId(provider: string) {
     .replace(/^_+|_+$/g, '');
 }
 
-export function normalizeProviderBaseUrl(baseUrl: string, _driverType?: string | null) {
+function normalizeProviderBasePath(pathname: string, enforceAnthropicV1: boolean) {
+  const trimmedPath = pathname.replace(/\/+$/, '') || '/';
+  if (!enforceAnthropicV1 || /\/v1$/i.test(trimmedPath)) {
+    return trimmedPath;
+  }
+  return trimmedPath === '/' ? '/v1' : `${trimmedPath}/v1`;
+}
+
+export function normalizeProviderBaseUrl(baseUrl: string, driverType?: string | null) {
   const trimmed = String(baseUrl || '').trim();
   if (!trimmed) return '';
 
+  const enforceAnthropicV1 = String(driverType || '').trim().toLowerCase() === 'anthropic';
+
   try {
     const url = new URL(trimmed);
-    // Strip trailing slashes only; leave path decisions to the Gateway runtime.
+    url.pathname = normalizeProviderBasePath(url.pathname, enforceAnthropicV1);
     return url.toString().replace(/\/+$/, '');
   } catch {
-    return trimmed.replace(/\/+$/, '');
+    return normalizeProviderBasePath(trimmed.replace(/\/+$/, ''), enforceAnthropicV1);
   }
 }
 

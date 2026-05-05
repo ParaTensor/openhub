@@ -139,7 +139,7 @@ async function rebuildProviderTypesFromModels() {
        DO UPDATE SET
          label = EXCLUDED.label,
          base_url = EXCLUDED.base_url,
-         driver_type = EXCLUDED.driver_type,
+         driver_type = provider_types.driver_type,
          models = EXCLUDED.models,
          enabled = EXCLUDED.enabled,
          sort_order = EXCLUDED.sort_order,

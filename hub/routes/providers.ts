@@ -38,6 +38,24 @@ function mergeCatalogModels(preferred: string[], existing: string[]) {
   return merged;
 }
 
+function normalizeDriverType(raw: unknown) {
+  const value = String(raw || '').trim().toLowerCase();
+  return value === 'anthropic' ? 'anthropic' : 'openai_compatible';
+}
+
+function normalizeReasoningTextEncoding(raw: unknown) {
+  const value = String(raw || '').trim().toLowerCase();
+  return value === 'xml_think_tag' ? 'xml_think_tag' : '';
+}
+
+function normalizeReasoningTextModelScope(raw: unknown, encoding: string) {
+  if (!encoding) return 'none';
+  const value = String(raw || '').trim().toLowerCase();
+  if (value === 'all_models') return 'all_models';
+  if (value === 'claude_family') return 'claude_family';
+  return 'none';
+}
+
 /** Fetches upstream /models (etc.) and persists only on success; does not clear existing catalog on failure. */
 async function refreshProviderModelCatalog(provider: string): Promise<CatalogRefreshResult> {
   const emptyLog: ProviderCatalogFetchLogEntry[] = [];
@@ -96,7 +114,10 @@ async function refreshProviderModelCatalog(provider: string): Promise<CatalogRef
 router.get('/provider-types', requireRole('admin'), async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, label, base_url, driver_type, models, enabled, sort_order, docs_url
+      `SELECT id, label, base_url, driver_type,
+              COALESCE(reasoning_text_encoding, '') AS reasoning_text_encoding,
+              COALESCE(reasoning_text_model_scope, 'none') AS reasoning_text_model_scope,
+              models, enabled, sort_order, docs_url
        FROM provider_types
        ORDER BY sort_order ASC, id ASC`,
     );
@@ -115,9 +136,14 @@ router.get('/provider-keys', requireRole('admin'), async (_req, res) => {
     );
     const currentVersion = String(stateRows[0]?.current_version || 'bootstrap');
     const { rows: accounts } = await pool.query(
-      `SELECT id AS provider, status, provider_type, label, base_url, COALESCE(docs_url, '') AS docs_url,
+      `SELECT a.id AS provider, a.status, a.provider_type, a.label, a.base_url, COALESCE(a.docs_url, '') AS docs_url,
+              COALESCE(NULLIF(pt.driver_type, ''), CASE WHEN a.provider_type = 'anthropic' THEN 'anthropic' ELSE 'openai_compatible' END) AS driver_type,
+              COALESCE(pt.reasoning_text_encoding, '') AS reasoning_text_encoding,
+              COALESCE(pt.reasoning_text_model_scope, 'none') AS reasoning_text_model_scope,
               COALESCE(supported_models, '[]'::jsonb) AS supported_models, supported_models_updated_at
-       FROM provider_accounts ORDER BY id ASC`
+       FROM provider_accounts a
+       LEFT JOIN provider_types pt ON pt.id = a.id
+       ORDER BY a.id ASC`
     );
     const { rows: keys } = await pool.query(
           `SELECT id, provider_account_id, label, api_key, status,
@@ -268,14 +294,29 @@ router.post(
 router.put('/provider-keys/:provider', requireRole('admin'), async (req, res) => {
   try {
     const provider = normalizeProviderId(req.params.provider || '');
-    const { status, label, base_url, docs_url, driver_type, keys } = req.body || {};
+    const {
+      status,
+      label,
+      base_url,
+      docs_url,
+      driver_type,
+      reasoning_text_encoding,
+      reasoning_text_model_scope,
+      keys,
+    } = req.body || {};
     
     if (!keys || !Array.isArray(keys)) {
       return res.status(400).json({ error: 'keys array is required' });
     }
 
     const providerType = normalizeProviderId(String((req.body || {}).provider_type || provider)) || provider;
-    const normalizedDriverType = String(driver_type || 'openai_compatible');
+    const normalizedDriverType = normalizeDriverType(driver_type || (req.body || {}).provider_type);
+    const normalizedReasoningTextEncoding = normalizedDriverType === 'openai_compatible'
+      ? normalizeReasoningTextEncoding(reasoning_text_encoding)
+      : '';
+    const normalizedReasoningTextModelScope = normalizedDriverType === 'openai_compatible'
+      ? normalizeReasoningTextModelScope(reasoning_text_model_scope, normalizedReasoningTextEncoding)
+      : 'none';
     const normalizedBaseUrl = normalizeProviderBaseUrl(
       String(base_url || providerBaseUrls[provider] || ''),
       normalizedDriverType,
@@ -355,13 +396,15 @@ router.put('/provider-keys/:provider', requireRole('admin'), async (req, res) =>
       }
 
       await client.query(
-        `INSERT INTO provider_types (id, label, base_url, driver_type, models, enabled, sort_order, docs_url, updated_at)
-         VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)
+        `INSERT INTO provider_types (id, label, base_url, driver_type, reasoning_text_encoding, reasoning_text_model_scope, models, enabled, sort_order, docs_url, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11)
          ON CONFLICT (id)
          DO UPDATE SET
            label = EXCLUDED.label,
            base_url = EXCLUDED.base_url,
            driver_type = EXCLUDED.driver_type,
+           reasoning_text_encoding = EXCLUDED.reasoning_text_encoding,
+           reasoning_text_model_scope = EXCLUDED.reasoning_text_model_scope,
            docs_url = EXCLUDED.docs_url,
            updated_at = EXCLUDED.updated_at`,
         [
@@ -369,6 +412,8 @@ router.put('/provider-keys/:provider', requireRole('admin'), async (req, res) =>
           String(label || provider),
           normalizedBaseUrl,
           normalizedDriverType,
+          normalizedReasoningTextEncoding,
+          normalizedReasoningTextModelScope,
           JSON.stringify([]),
           true,
           0,

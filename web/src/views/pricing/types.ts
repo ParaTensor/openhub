@@ -37,6 +37,7 @@ export type ProviderKeyRow = {
   base_url?: string;
   docs_url?: string;
   provider_type?: string;
+  driver_type?: string;
   supported_models?: string[];
   supported_models_updated_at?: number | null;
   keys?: { id?: string; label: string; supported_models?: string[] }[];

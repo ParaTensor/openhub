@@ -121,7 +121,7 @@ export default function ProviderAccountModal({ isOpen, onClose, onSuccess }: Pro
                   setNewProvider(prev => ({...prev, ...updates}));
                 }}
                 options={[
-                  { value: 'openai_compatible', label: 'OpenAI Compatible' },
+                  { value: 'openai_compatible', label: 'OpenAI' },
                   { value: 'anthropic', label: 'Anthropic' }
                 ]}
               />
